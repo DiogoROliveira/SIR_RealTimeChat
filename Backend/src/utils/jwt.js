@@ -11,12 +11,16 @@ function generateToken(userId) {
 }
 
 // Verificar um token
-function verifyToken(token) {
-    try {
-        return jwt.verify(token, JWT_SECRET);
-    } catch (err) {
-        throw new Error("Token inválido ou expirado");
-    }
+async function verifyToken(token) {
+    return new Promise((resolve, reject) => {
+        jwt.verify(token, process.env.SECRETTOKEN, (err, decoded) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(decoded);
+            }
+        });
+    });
 }
 
 module.exports = { generateToken, verifyToken };

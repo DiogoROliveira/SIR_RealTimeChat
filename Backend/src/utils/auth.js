@@ -1,16 +1,20 @@
-const { User } = require("../models/User.js");
-const { generateToken } = require("./jwt.js");
+const User = require("../models/User");
+const { generateToken } = require("./jwt");
 
 // Register
-async function register(req, res) {
-    const { username, password } = req.body;
+async function register(username, password) {
     try {
+        const existingUser = await User.findOne({ username });
+        if (existingUser) {
+            return { status: 400, error: "Username já está em uso" };
+        }
         const newUser = new User({ username, password });
         await newUser.save();
         const token = generateToken(newUser._id);
-        res.status(201).json({ message: "Utilizador criado com sucesso", token });
+        return { status: 200, token };
     } catch (err) {
-        res.status(400).json({ error: "Erro ao registrar o utilizador" });
+        console.error("Error during registration:", err);
+        return { status: 500, error: "Internal server error" };
     }
 }
 

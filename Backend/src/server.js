@@ -4,7 +4,6 @@ const { Server } = require("socket.io");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const exp = require("constants");
 
 dotenv.config();
 
@@ -20,6 +19,10 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Routes
+const routes = require("./utils/routes");
+app.use("/", routes);
 
 // Test endpoint
 app.get("/", (req, res) => {
