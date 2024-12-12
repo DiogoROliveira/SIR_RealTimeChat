@@ -33,4 +33,22 @@ router.get("/test", async (req, res) => {
     }
 });
 
+router.post("/login", async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        const result = await login(username, password);
+
+        if (result.status !== 200) {
+            console.error(result.error);
+            return res.status(result.status).json({ message: result.error });
+        }
+
+        res.status(200).json({ message: "Login successful", token: result.token });
+    } catch (err) {
+        console.error("Unexpected error:", err);
+        res.status(500).json({ message: "Unexpected error occurred" });
+    }
+});
+
 module.exports = router;
