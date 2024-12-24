@@ -13,7 +13,7 @@ function generateToken(userId) {
 // Verificar um token
 async function verifyToken(token) {
     return new Promise((resolve, reject) => {
-        jwt.verify(token, process.env.SECRETTOKEN, (err, decoded) => {
+        jwt.verify(token, JWT_SECRET, (err, decoded) => {
             if (err) {
                 reject(err);
             } else {

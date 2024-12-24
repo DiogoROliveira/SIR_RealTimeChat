@@ -11,10 +11,10 @@ async function register(username, password) {
         const newUser = new User({ username, password });
         await newUser.save();
         const token = generateToken(newUser._id);
-        return { status: 200, token };
+        return { status: 200, token, user: { id: newUser._id, username } };
     } catch (err) {
-        console.error("Error during registration:", err);
-        return { status: 500, error: "Internal server error" };
+        console.error("Erro durante o registro:", err);
+        return { status: 500, error: "Erro interno no servidor" };
     }
 }
 
@@ -33,9 +33,14 @@ async function login(req, res) {
         }
 
         const token = generateToken(user._id);
-        res.status(200).json({ message: "Login bem-sucedido", token });
+        res.status(200).json({
+            message: "Login bem-sucedido",
+            token,
+            user: { id: user._id, username },
+        });
     } catch (err) {
-        res.status(500).json({ error: "Erro no servidor" });
+        console.error("Erro durante o login:", err);
+        res.status(500).json({ error: "Erro interno no servidor" });
     }
 }
 
