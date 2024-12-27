@@ -1,11 +1,8 @@
-const dotenv = require("dotenv");
 const { register, login } = require("./auth");
-dotenv.config();
-
-// express router middleware
 const { Router } = require("express");
 const router = new Router();
 
+// Registro de utilizador
 router.post("/register", async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -13,23 +10,38 @@ router.post("/register", async (req, res) => {
         const result = await register(username, password);
 
         if (result.status !== 200) {
-            return res.status(result.status).json({ message: result.error });
+            return res.status(result.status).json({ error: result.error });
         }
 
-        res.status(200).json({ message: "User registered successfully", token: result.token });
+        res.status(200).json({
+            message: "Utilizador registado com sucesso",
+            token: result.token,
+            user: result.user,
+        });
     } catch (err) {
-        console.error("Unexpected error:", err);
-        res.status(500).json({ message: "Unexpected error occurred" });
+        console.error("Erro inesperado no registro:", err);
+        res.status(500).json({ error: "Erro inesperado ocorreu" });
     }
 });
 
+// Login de utilizador
+router.post("/login", async (req, res) => {
+    try {
+        await login(req, res);
+    } catch (err) {
+        console.error("Erro inesperado no login:", err);
+        res.status(500).json({ error: "Erro inesperado ocorreu" });
+    }
+});
+
+// Teste de rota
 router.get("/test", async (req, res) => {
     try {
-        console.log("test route");
-        res.status(200).json({ message: "Test route" });
+        console.log("Rota de teste acessada");
+        res.status(200).json({ message: "Rota de teste funcionando" });
     } catch (err) {
-        console.log(err);
-        res.status(400).json({ message: "Error on test route" });
+        console.error("Erro na rota de teste:", err);
+        res.status(400).json({ error: "Erro na rota de teste" });
     }
 });
 
