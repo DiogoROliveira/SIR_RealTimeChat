@@ -1,24 +1,12 @@
-<script setup>
-import { RouterView } from "vue-router";
-</script>
-
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
-  </header>
-
-  <main>
-    <RouterView /> <!-- Renderiza o componente associado à rota -->
-  </main>
+  <!-- Aqui, o Vue Router irá injetar a página ou componente correspondente ao caminho -->
+  <router-view />
 </template>
 
-<style scoped>
-header {
-  line-height: 1.5;
-}
+<script setup>
+// O Vue Router cuida da navegação automaticamente, então não é necessário importar nada aqui.
+</script>
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
+<style scoped>
+/* Sem estilos globais ou adicionais. Apenas o estilo específico para esse componente, que é vazio. */
 </style>

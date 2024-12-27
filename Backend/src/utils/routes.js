@@ -1,6 +1,12 @@
-const { register, login } = require("./auth");
+const { register, login, authenticate } = require("./auth");
 const { Router } = require("express");
+const Room = require("../models/Room");
 const router = new Router();
+
+// Rota de teste
+router.get("/test", (req, res) => {
+    res.status(200).json({ message: "Rota de teste funcionando" });
+});
 
 // Registro de utilizador
 router.post("/register", async (req, res) => {
@@ -9,11 +15,11 @@ router.post("/register", async (req, res) => {
 
         const result = await register(username, password);
 
-        if (result.status !== 200) {
+        if (result.status !== 201) {
             return res.status(result.status).json({ error: result.error });
         }
 
-        res.status(200).json({
+        res.status(201).json({
             message: "Utilizador registado com sucesso",
             token: result.token,
             user: result.user,
@@ -25,23 +31,50 @@ router.post("/register", async (req, res) => {
 });
 
 // Login de utilizador
-router.post("/login", async (req, res) => {
+router.post("/login", login);
+
+// Criar uma sala (rota protegida)
+router.post("/rooms", authenticate, async (req, res) => {
     try {
-        await login(req, res);
+        const { name, isPrivate } = req.body;
+        const room = new Room({ name, isPrivate, users: [req.user.id] });
+        await room.save();
+        res.status(201).json({ message: "Sala criada com sucesso", room });
     } catch (err) {
-        console.error("Erro inesperado no login:", err);
-        res.status(500).json({ error: "Erro inesperado ocorreu" });
+        console.error("Erro ao criar sala:", err);
+        res.status(500).json({ error: "Erro ao criar sala" });
     }
 });
 
-// Teste de rota
-router.get("/test", async (req, res) => {
+// Listar salas (rota protegida)
+router.get("/rooms", authenticate, async (req, res) => {
     try {
-        console.log("Rota de teste acessada");
-        res.status(200).json({ message: "Rota de teste funcionando" });
+        const rooms = await Room.find({ users: req.user.id }).populate("users", "username");
+        res.status(200).json(rooms);
     } catch (err) {
-        console.error("Erro na rota de teste:", err);
-        res.status(400).json({ error: "Erro na rota de teste" });
+        console.error("Erro ao listar salas:", err);
+        res.status(500).json({ error: "Erro ao listar salas" });
+    }
+});
+
+// Excluir sala (rota protegida)
+router.delete("/rooms/:roomId", authenticate, async (req, res) => {
+    try {
+        const room = await Room.findById(req.params.roomId);
+        if (!room) {
+            return res.status(404).json({ error: "Sala não encontrada" });
+        }
+
+        if (!room.users.includes(req.user.id)) {
+            return res.status(403).json({ error: "Você não tem permissão para excluir essa sala" });
+        }
+
+        await Room.deleteOne({ _id: req.params.roomId });
+
+        res.status(200).json({ message: "Sala excluída com sucesso" });
+    } catch (err) {
+        console.error("Erro ao excluir sala:", err);
+        res.status(500).json({ error: "Erro ao excluir sala" });
     }
 });
 
