@@ -4,9 +4,7 @@ const { Server } = require("socket.io");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
-
-// Configuração de variáveis de ambiente
-dotenv.config();
+dotenv.config({ path: "../.env" });
 
 if (!process.env.MONGO_URI) {
     console.error("⚠️  MONGO_URI não está configurado no .env");
@@ -39,8 +37,19 @@ app.get("/", (req, res) => {
 io.on("connection", (socket) => {
     console.log("🔗 User connected: ", socket.id);
 
-    // Gerenciar eventos de mensagem ou outros eventos do chat aqui.
+    // Entrar em uma sala (se passar um roomId)
+    socket.on("joinRoom", (roomId) => {
+        socket.join(roomId); // O usuário entra na sala especificada
+        console.log(`🔊 User ${socket.id} joined room: ${roomId}`);
+    });
 
+    // Enviar uma mensagem para uma sala específica
+    socket.on("sendMessage", (roomId, message) => {
+        io.to(roomId).emit("message", message); // Enviar a mensagem para todos na sala
+        console.log(`📩 Message sent to room ${roomId}: ${message}`);
+    });
+
+    // Desconectar o usuário
     socket.on("disconnect", () => {
         console.log("❌ User disconnected: ", socket.id);
     });
@@ -48,10 +57,9 @@ io.on("connection", (socket) => {
 
 // Conexão com MongoDB
 mongoose
-    .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .connect(process.env.MONGO_URI)
     .then(() => {
         console.log("✅ Connected to MongoDB");
-        // Só inicia o servidor após conectar ao MongoDB
         const PORT = process.env.PORT || 3000;
         server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
     })
