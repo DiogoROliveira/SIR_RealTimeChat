@@ -129,7 +129,6 @@ router.delete("/rooms/:roomId", authenticate, async (req, res) => {
     }
 });
 
-
 // Editar uma sala (rota protegida)
 router.put("/rooms/:roomId", authenticate, async (req, res) => {
     try {
@@ -274,7 +273,5 @@ router.post("/rooms/:roomId/kick", authenticate, async (req, res) => {
         res.status(500).json({ error: "Erro ao expulsar usuário" });
     }
 });
-
-
 
 module.exports = router;
