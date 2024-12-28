@@ -93,7 +93,7 @@ export default {
 
         if (response.ok) {
           sessionStorage.setItem('token', data.token);
-          this.$router.push('/rooms');
+          this.$router.push('/dashboard');
         } else {
           this.errorMessage = data.error || 'Credenciais inválidas';
         }

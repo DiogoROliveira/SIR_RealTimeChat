@@ -4,6 +4,13 @@ const { Server } = require("socket.io");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
+
+const jwt = require("jsonwebtoken");
+const routes = require("./utils/routes");
+const Room = require("./models/Room");
+const User = require("./models/User");
+const { timeStamp } = require("console");
+
 dotenv.config();
 
 if (!process.env.MONGO_URI) {
@@ -25,7 +32,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Rotas
-const routes = require("./utils/routes");
 app.use("/", routes);
 
 // Endpoint de teste
@@ -37,16 +43,64 @@ app.get("/", (req, res) => {
 io.on("connection", (socket) => {
     console.log("🔗 User connected: ", socket.id);
 
-    // listener teste para o evento "message"
-    socket.on("message", (message) => {
-        socket.broadcast.emit("message", message); // Enviar a mensagem para todos os usuários conectados
-        console.log(`📩 Message received: ${message}`);
+    socket.on("authenticate", (token) => {
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            socket.userId = decoded.id;
+        } catch (err) {
+            console.error("Erro na autenticação do socket:", err);
+        }
     });
 
-    // Entrar em uma sala (se passar um roomId)
     socket.on("joinRoom", (roomId) => {
-        socket.join(roomId); // O usuário entra na sala especificada
+        socket.join(roomId);
         console.log(`🔊 User ${socket.id} joined room: ${roomId}`);
+    });
+
+    socket.on("leaveRoom", (roomId) => {
+        socket.leave(roomId);
+        console.log(`🔇 User ${socket.id} left room: ${roomId}`);
+    });
+
+    socket.on("message", async (data) => {
+        try {
+            const { roomId, message } = data;
+
+            if (!socket.userId) {
+                console.log("🔒 User not authenticated");
+                return;
+            }
+
+            const room = await Room.findById(roomId);
+            if (!room) {
+                console.log("❌ Room not found");
+                return;
+            }
+
+            const messageObj = {
+                user: socket.userId,
+                message: message.text,
+                timeStamp: new Date(),
+            };
+
+            room.messages.push(messageObj);
+            await room.save();
+
+            const user = await User.findById(socket.userId);
+            const messageToSend = {
+                id: messageObj._id,
+                text: message.text,
+                user: {
+                    username: user.username,
+                    profilePicture: user.profilePicture,
+                },
+                timeStamp: messageObj.timeStamp,
+            };
+
+            io.to(roomId).emit("message", messageToSend);
+        } catch (err) {
+            console.error("❌ Error sending message: ", err);
+        }
     });
 
     // Enviar uma mensagem para uma sala específica

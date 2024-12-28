@@ -1,14 +1,19 @@
-const { register, login, authenticate } = require("./auth");
+const { register, login, authenticate, userAuth } = require("./auth");
 const { Router } = require("express");
 const Room = require("../models/Room");
+const User = require("../models/User");
 const router = new Router();
 
 const crypto = require("crypto");
 
+/*
 // Rota de teste
 router.get("/test", (req, res) => {
     res.status(200).json({ message: "Rota de teste funcionando" });
 });
+*/
+
+// ============================== UTILIZADORES ==============================
 
 // Registro de utilizador
 router.post("/register", async (req, res) => {
@@ -33,6 +38,48 @@ router.post("/register", async (req, res) => {
 });
 
 router.post("/login", login);
+
+router.get("/user", userAuth, (req, res) => {
+    const { username } = req.user;
+
+    res.status(200).json({
+        user: {
+            username,
+            bio: req.user.bio || "Nenhuma biografia disponível",
+            profilePicture: req.user.profilePicture || null,
+        },
+    });
+});
+
+router.put("/user/profile", authenticate, async (req, res) => {
+    try {
+        const { bio, profilePicture } = req.body;
+        const user = await User.findById(req.user.id);
+
+        if (!user) {
+            return res.status(404).json({ error: "Usuário não encontrado" });
+        }
+
+        if (bio !== undefined) user.bio = bio;
+        if (profilePicture !== undefined) user.profilePicture = profilePicture;
+
+        await user.save();
+
+        res.status(200).json({
+            message: "Perfil atualizado com sucesso",
+            user: {
+                username: user.username,
+                bio: user.bio,
+                profilePicture: user.profilePicture,
+            },
+        });
+    } catch (err) {
+        console.error("Erro ao atualizar perfil:", err);
+        res.status(500).json({ error: "Erro ao atualizar perfil" });
+    }
+});
+
+// ============================== SALAS ==============================
 
 // Criar uma sala (rota protegida)
 router.post("/rooms", authenticate, async (req, res) => {
@@ -272,6 +319,40 @@ router.post("/rooms/:roomId/kick", authenticate, async (req, res) => {
     } catch (err) {
         console.error("Erro ao expulsar usuário:", err);
         res.status(500).json({ error: "Erro ao expulsar usuário" });
+    }
+});
+
+router.get("/rooms/:roomId/messages", authenticate, async (req, res) => {
+    try {
+        const { roomId } = req.params;
+        const room = await Room.findById(roomId).populate({
+            path: "messages.user",
+            select: "username profilePicture -_id",
+        });
+
+        if (!room) {
+            return res.status(404).json({ error: "Sala não encontrada" });
+        }
+
+        if (room.isPrivate && !room.users.includes(req.user.id)) {
+            return res.status(403).json({ error: "Você não tem acesso a esta sala" });
+        }
+
+        // Formata as mensagens para retornar
+        const messages = room.messages.map((msg) => ({
+            id: msg._id,
+            text: msg.message,
+            user: {
+                username: msg.user.username,
+                profilePicture: msg.user.profilePicture,
+            },
+            timestamp: msg.timestamp,
+        }));
+
+        res.status(200).json({ messages });
+    } catch (err) {
+        console.error("Erro ao buscar mensagens:", err);
+        res.status(500).json({ error: "Erro ao buscar mensagens" });
     }
 });
 

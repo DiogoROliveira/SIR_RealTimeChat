@@ -11,6 +11,14 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    bio: {
+        type: String,
+        default: "Nenhuma biografia disponível.",
+    },
+    profilePicture: {
+        type: String,
+        default: null,
+    },
 });
 
 userSchema.pre("save", async function (next) {

@@ -31,7 +31,7 @@
         </div>
       </div>
 
-      <div class="cta-buttons">
+      <div v-if="!isAuthed" class="cta-buttons">
         <router-link to="/login" class="btn btn-login">
           Entrar
           <span class="btn-icon">→</span>
@@ -39,6 +39,12 @@
         <router-link to="/register" class="btn btn-register">
           Criar Conta
           <span class="btn-icon">+</span>
+        </router-link>
+      </div>
+      <div v-if="isAuthed" class="cta-buttons">
+        <router-link to="/dashboard" class="btn btn-login">
+          Ir para o Dashboard
+          <span class="btn-icon">→</span>
         </router-link>
       </div>
     </main>
@@ -58,7 +64,23 @@
 
 <script>
 export default {
-  name: "Home"
+  name: "Home",
+  data() {
+    return {
+      isAuthed: false,
+    }
+  },
+  mounted() {
+    this.checkAuth();
+  },
+  methods: {
+    checkAuth() {
+      const token = sessionStorage.getItem('token');
+      if (token) {
+        this.isAuthed = true;
+      }
+    }
+  },
 };
 </script>
 
@@ -73,8 +95,8 @@ export default {
 
 .home-container {
   width:100%;
+  height: 100vh;
   border-radius: 2rem;
-  scale: 0.95;
   display: flex;
   flex-direction: column;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
