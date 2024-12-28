@@ -4,7 +4,7 @@ const { Server } = require("socket.io");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
-dotenv.config({ path: "../.env" });
+dotenv.config();
 
 if (!process.env.MONGO_URI) {
     console.error("⚠️  MONGO_URI não está configurado no .env");
