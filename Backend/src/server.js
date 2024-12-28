@@ -25,6 +25,7 @@ const io = new Server(server, {
         origin: "*",
     },
 });
+app.set("io", io);
 
 // Middlewares
 app.use(cors());

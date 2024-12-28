@@ -112,6 +112,15 @@ router.post("/rooms", authenticate, async (req, res) => {
 
         await room.save();
 
+        const io = req.app.get("io");
+        io.to(req.user.id).emit("roomCreated", {
+            id: room.id,
+            name: room.name,
+            isPrivate: room.isPrivate,
+            accessCode: room.accessCode || null,
+            capacity: room.capacity,
+        });
+
         res.status(201).json({
             success: true,
             message: "Sala criada com sucesso",
