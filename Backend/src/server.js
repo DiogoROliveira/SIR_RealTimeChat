@@ -4,10 +4,10 @@ const { Server } = require("socket.io");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
-dotenv.config({ path: "../.env" });
+dotenv.config();
 
 if (!process.env.MONGO_URI) {
-    console.error("⚠️  MONGO_URI não está configurado no .env");
+    console.error("⚠️ MONGO_URI não está configurado no .env");
     process.exit(1);
 }
 
@@ -36,6 +36,12 @@ app.get("/", (req, res) => {
 // WebSocket connection
 io.on("connection", (socket) => {
     console.log("🔗 User connected: ", socket.id);
+
+    // listener teste para o evento "message"
+    socket.on("message", (message) => {
+        socket.broadcast.emit("message", message); // Enviar a mensagem para todos os usuários conectados
+        console.log(`📩 Message received: ${message}`);
+    });
 
     // Entrar em uma sala (se passar um roomId)
     socket.on("joinRoom", (roomId) => {

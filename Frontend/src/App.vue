@@ -1,12 +1,31 @@
 <template>
-  <!-- Aqui, o Vue Router irá injetar a página ou componente correspondente ao caminho -->
   <router-view />
 </template>
 
 <script setup>
-// O Vue Router cuida da navegação automaticamente, então não é necessário importar nada aqui.
+
 </script>
 
-<style scoped>
-/* Sem estilos globais ou adicionais. Apenas o estilo específico para esse componente, que é vazio. */
+<style>
+/* Removido o "scoped" para que os estilos sejam globais */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+#app {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 </style>

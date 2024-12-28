@@ -64,25 +64,38 @@ export default {
 
 <style scoped>
 /* Estilos base e reset */
-.home-container {
-  min-height: 100vh;
+
+:root, body {
+  margin: 0;
+  padding: 0;
   width: 100%;
+}
+
+.home-container {
+  width:100%;
+  border-radius: 2rem;
+  scale: 0.95;
   display: flex;
   flex-direction: column;
-  position: relative;
-  overflow: hidden;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   color: #fff;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+  position: relative;
+  overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 /* Animação de fundo */
 .background-animation {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+  width: 100%;
+  height: 100%;
   background: 
     radial-gradient(circle at 20% 30%, rgba(41, 196, 255, 0.1) 0%, transparent 50%),
     radial-gradient(circle at 80% 70%, rgba(255, 41, 117, 0.1) 0%, transparent 50%);
@@ -124,6 +137,7 @@ export default {
   font-size: 3.5rem;
   font-weight: 800;
   background: linear-gradient(to right, #fff, #00f2fe);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: 1rem;
@@ -141,16 +155,20 @@ export default {
 
 /* Main Content */
 .main {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 2rem;
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem;
   position: relative;
   z-index: 1;
 }
 
 .features {
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 2rem;
@@ -241,6 +259,8 @@ export default {
 
 /* Footer */
 .footer {
+  width: 100%;
+  box-sizing: border-box;
   padding: 2rem;
   background: rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px);
@@ -249,6 +269,7 @@ export default {
 }
 
 .footer-content {
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
   display: flex;
@@ -322,7 +343,7 @@ export default {
 }
 
 /* Responsividade */
-@media (max-width: 768px) {
+@media (max-width: 768px) and (min-width: 375px) {
   .title {
     font-size: 2.5rem;
   }

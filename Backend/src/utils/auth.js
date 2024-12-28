@@ -23,20 +23,20 @@ async function register(username, password) {
 }
 
 // Login
-async function login(username, password) {
+async function login(req, res) {
+    const { username, password } = req.body;
     try {
         const user = await User.findOne({ username });
         if (!user) {
-            return { status: 404, error: "User not found" };
+            return res.status(404).json({ error: "Utilizador não encontrado" });
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
-            return { status: 401, error: "Invalid password" };
+            return res.status(401).json({ error: "Senha inválida" });
         }
 
         const token = generateToken(user._id);
-
         res.status(200).json({
             message: "Login bem-sucedido",
             token,

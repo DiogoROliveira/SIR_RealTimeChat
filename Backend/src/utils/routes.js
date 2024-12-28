@@ -30,9 +30,6 @@ router.post("/register", async (req, res) => {
     }
 });
 
-// Login de utilizador
-router.post("/login", login);
-
 // Criar uma sala (rota protegida)
 router.post("/rooms", authenticate, async (req, res) => {
     try {
@@ -49,7 +46,7 @@ router.post("/rooms", authenticate, async (req, res) => {
 // Listar salas (rota protegida)
 router.get("/rooms", authenticate, async (req, res) => {
     try {
-        const rooms = await Room.find({ users: req.user.id }).populate("users", "username");
+        const rooms = await Room.find();
         res.status(200).json(rooms);
     } catch (err) {
         console.error("Erro ao listar salas:", err);
@@ -78,22 +75,6 @@ router.delete("/rooms/:roomId", authenticate, async (req, res) => {
     }
 });
 
-router.post("/login", async (req, res) => {
-    try {
-        const { username, password } = req.body;
-
-        const result = await login(username, password);
-
-        if (result.status !== 200) {
-            console.error(result.error);
-            return res.status(result.status).json({ message: result.error });
-        }
-
-        res.status(200).json({ message: "Login successful", token: result.token });
-    } catch (err) {
-        console.error("Unexpected error:", err);
-        res.status(500).json({ message: "Unexpected error occurred" });
-    }
-});
+router.post("/login", login);
 
 module.exports = router;
