@@ -32,6 +32,8 @@ router.post("/register", async (req, res) => {
     }
 });
 
+router.post("/login", login);
+
 // Criar uma sala (rota protegida)
 router.post("/rooms", authenticate, async (req, res) => {
     try {
