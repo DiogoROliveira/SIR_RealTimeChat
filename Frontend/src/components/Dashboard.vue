@@ -34,9 +34,9 @@
         <div class="public-rooms">
           <h4>Salas Públicas</h4>
           <ul v-if="publicRooms.length">
-            <li v-for="room in publicRooms" :key="room.id">
+            <li v-for="room in publicRooms" :key="room._id">
               {{ room.name }}
-              <button @click="joinRoom(room.id)" class="join-btn">Entrar</button>
+              <button @click="joinRoom(room._id)" class="join-btn">Entrar</button>
             </li>
           </ul>
           <p v-else>Nenhuma sala pública disponível no momento.</p>
@@ -180,11 +180,7 @@ data() {
     showToast: false,
     toastMessage: "",
     showChatModal: false,
-    publicRooms: [
-      { id: 1, name: "Chat Público 1" },
-      { id: 2, name: "Chat Público 2" },
-    ],
-
+    publicRooms: [],
     showRoomCreateModal: false,
     newRoom: {
       name: "",
@@ -326,14 +322,36 @@ methods: {
   openJoinByLink() {
     alert("Entrar por link/código clicado! Placeholder para funcionalidade futura.");
   },
-  joinRoom(roomId) {
-    alert(`Entrando na sala com ID: ${roomId}`);
-    this.closeChatModal();
+  async joinRoom(roomId) {
+    try {
+      const response = await fetch(`http://localhost:3000/rooms/${roomId}/join`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        this.chatRooms.push(data.room);  
+        this.selectRoom(data.room._id);  
+        this.showToast = true;
+        this.toastMessage = "Entrou na sala com sucesso!";
+        this.closeChatModal();
+      } else {
+        alert(data.error || "Erro ao entrar na sala.");
+      }
+    } catch (error) {
+      console.error("Erro ao entrar na sala:", error);
+      alert("Erro ao entrar na sala.");
+    }
   },
 },
 async mounted(){
     this.socket = io("http://localhost:3000");
 
+    // get user info
     try {
         const response = await fetch("http://localhost:3000/user", {
             headers: {
@@ -357,6 +375,7 @@ async mounted(){
         this.$router.push("/login");
     }
 
+    // get users chat rooms
     try {
       const response = await fetch("http://localhost:3000/rooms", {
         headers: {
@@ -377,6 +396,24 @@ async mounted(){
       this.$router.push("/login");
     }
 
+    // get public rooms
+    try {
+      const response = await fetch("http://localhost:3000/rooms/public", {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao buscar salas públicas");
+      }
+
+      const data = await response.json();
+      this.publicRooms = data.data;
+      console.log(data.data);
+    } catch (error) {
+      console.error("Erro ao buscar salas públicas:", error);
+    }
 
     this.socket.on("message", (message) => {
         this.messages = this.messages.concat(message);

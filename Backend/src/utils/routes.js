@@ -143,10 +143,7 @@ router.get("/rooms", authenticate, async (req, res) => {
     try {
         // Buscar salas públicas e privadas em que o usuário é membro
         const rooms = await Room.find({
-            $or: [
-                { isPrivate: false }, // Salas públicas
-                { isPrivate: true, users: req.user.id }, // Salas privadas do usuário
-            ],
+            users: req.user.id, // Salas onde o usuário é membro
         }).sort({ createdAt: -1 }); // Ordena pelas mais recentes (descendente)
 
         res.status(200).json({
@@ -159,6 +156,29 @@ router.get("/rooms", authenticate, async (req, res) => {
         res.status(500).json({
             success: false,
             error: "Erro ao listar salas",
+        });
+    }
+});
+
+router.get("/rooms/public", authenticate, async (req, res) => {
+    try {
+        const rooms = await Room.find({
+            isPrivate: false,
+            users: { $not: { $eq: req.user.id } },
+        }).sort({
+            createdAt: -1,
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Salas públicas listadas com sucesso",
+            data: rooms,
+        });
+    } catch (err) {
+        console.error("Erro ao listar salas públicas:", err);
+        res.status(500).json({
+            success: false,
+            error: "Erro ao listar salas públicas",
         });
     }
 });
