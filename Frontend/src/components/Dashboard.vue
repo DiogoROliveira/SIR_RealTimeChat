@@ -1,3 +1,6 @@
+<!-- TODO: Implementar Sockets e system messages para quando um user entra/sai -->
+<!-- TODO: Also, fazer botao de sair de grupo para users sem roles -->
+<!-- TODO: Also^2, fazer parte de entrar num grupo privado com um referral code --> 
 <template>
   <div class="dashboard">
     <aside class="user-info">
@@ -14,6 +17,8 @@
     <div class="chat-rooms">
       <h2>Grupos</h2>
       <ul>
+        <!-- ! Implementar indicador de capacidade (EX: n/10) -->
+         
         <li
           v-for="room in chatRooms"
           :key="room._id"
@@ -26,6 +31,8 @@
       <button class="add-chat-btn" @click="openChatModal">Adicionar Chats</button>
     </div>
 
+    <!-- ! Implementar divisao por componentes -->
+    <!-- Modal de Gestão de Chats -->
     <div v-if="showChatModal" class="modal-overlay" @click.self="closeChatModal">
       <div class="modal-content">
         <h3>Gerir Chats</h3>
@@ -52,6 +59,7 @@
       </div>
     </div>
 
+    <!-- ! Implementar divisao por componentes -->
     <!-- Modal de Criação de Sala -->
     <div v-if="showRoomCreateModal" class="modal-overlay" @click.self="closeRoomCreateModal">
       <div class="modal-content">
@@ -97,21 +105,22 @@
 
     <div class="chat-window">
       <div v-if="selectedRoom" class="messages">
-        <h3>{{ getRoomName(selectedRoom) }}</h3>
-        <div class="message-list">
-          <div
-            class="message-item"
-            v-for="message in messages"
-            :key="message.id"
-          >
+        <div class="chat-window-header">
+          <h3>{{ getRoomName(selectedRoom) }}</h3>
+          <div v-if="isAdmin" class="settings-icon" @click="openRoomSettings">
+            ⚙️
+          </div>
+        </div>
+        <div class="message-list" ref="messageList">
+          <div class="message-item" v-for="message in messages" :key="message.id">
             <div
-            class="message-avatar"
-            :style="{
-              backgroundImage: message.user.profilePicture
-                ? `url(${message.user.profilePicture})`
-                : 'linear-gradient(135deg, #00ff2fe 0%, #4facfe 100%)',
-              backgroundSize: 'cover'
-            }"
+              class="message-avatar"
+              :style="{
+                backgroundImage: message.user.profilePicture
+                  ? `url(${message.user.profilePicture})`
+                  : 'linear-gradient(135deg, #00ff2fe 0%, #4facfe 100%)',
+                backgroundSize: 'cover'
+              }"
             ></div>
             <div class="message-content">
               <p class="message-user">{{ message.user.username }}</p>
@@ -133,6 +142,71 @@
         <p>Selecione um grupo para começar a conversar.</p>
       </div>
     </div>
+
+
+    <div v-if="selectedRoom" class="user-list">
+      <h3>Utilizadores no grupo</h3>
+      <ul>
+        <li v-for="user in roomUsers" :key="user._id">
+          <div class="user-avatar" :style="getUserAvatarStyle(user)"></div>
+          <span>{{ user.username }}</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- ! Implementar divisao por componentes -->
+    <!-- Modal de Configurações da Sala atualizado -->
+    <div v-if="showRoomSettings" class="modal-overlay room-settings-modal" @click.self="closeRoomSettings">
+      <div class="modal-content room-settings-content">
+        <div class="room-settings-header">
+          <h3>Configurações da Sala</h3>
+          <button @click="closeRoomSettings" class="close-icon">&times;</button>
+        </div>
+        
+        <div class="room-settings-body">
+          <!-- Editar nome da sala -->
+          <div class="form-group room-name-group">
+            <label>Nome da Sala</label>
+            <input 
+              v-model="roomSettings.name" 
+              type="text" 
+              placeholder="Nome da sala"
+              class="room-name-input"
+            >
+          </div>
+
+          <!-- Lista de usuários com opção de kick -->
+          <div class="room-users-section">
+            <h4>Utilizadores</h4>
+            <div class="room-users-list">
+              <div 
+                v-for="userI in roomUsers" 
+                :key="user._id" 
+                class="room-user-item"
+              >
+                <div class="user-info">
+                  <div class="user-avatar" :style="getUserAvatarStyle(userI)"></div>
+                  <span class="user-name">{{ userI.username }}</span>
+                </div>
+                <button 
+                  v-if="userI._id !== user._id"
+                  @click="kickUser(userI._id)" 
+                  class="kick-btn"
+                >
+                  Expulsar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="room-settings-footer">
+          <button @click="saveRoomSettings" class="save-btn">Salvar</button>
+          <button @click="closeRoomSettings" class="cancel-btn">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -156,115 +230,265 @@
 import { io } from "socket.io-client";
 import UserSettings from "./UserSettings.vue";
 import Toast from './Toast.vue';
+import { sanitizeInput } from './utils/security';
+
+const API_URL = 'http://localhost:3000';
 
 export default {
-name: "Dashboard",
-components: {
-  UserSettings,
-  Toast,
-},
-data() {
-  return {
-    user: {
-      username: "",
-      bio: "",
-      profilePicture: null,
-    },
-    chatRooms: [],
-    selectedRoom: null,
-    joined: false,
-    messages: [],
-    newMessage: "",
-    socket: null,
-    showSettings: false,
-    showToast: false,
-    toastMessage: "",
-    showChatModal: false,
-    publicRooms: [],
-    showRoomCreateModal: false,
-    newRoom: {
-      name: "",
-      capacity: 10,
-      isPrivate: false,
-    },
-  };
-},
-methods: {
-  async selectRoom(roomId) {
-    try {
-      if (this.selectedRoom) {
-          this.socket.emit("leaveRoom", this.selectedRoom);
-      }  
+  name: "Dashboard",
+  components: {
+    UserSettings,
+    Toast,
+  },
+  data() {
+    return {
+      user: {
+        _id: null,
+        username: "",
+        bio: "",
+        profilePicture: null,
+      },
+      chatRooms: [],
+      selectedRoom: null,
+      roomUsers: [],
+      isAdmin: false,
+      messages: [],
+      newMessage: "",
+      socket: null,
+      showSettings: false,
+      showToast: false,
+      toastMessage: "",
+      toastType: "success",
+      showChatModal: false,
+      publicRooms: [],
+      showRoomCreateModal: false,
+      newRoom: {
+        name: "",
+        capacity: 10,
+        isPrivate: false,
+      },
+      showRoomSettings: false,
+      roomSettings: {
+        name: '',
+      },
+    };
+  },
+  methods: {
 
-      this.selectedRoom = roomId;
-      this.messages = [];
+  initializeSocket() {
+    this.socket = io(API_URL, {
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: 5,
+    });
 
-      this.socket.emit("authenticate",sessionStorage.getItem("token"));
+    this.socket.on("connect", () => {
+        this.socket.emit("authenticate", sessionStorage.getItem("token"));
+    });
 
-      this.socket.emit("joinRoom", roomId);
+    // This isnt working idk why
+    this.socket.on("authError", (message) => {
+        this.logout();
+    });
 
-      await this.loadMessages(roomId);
-    } catch (error) {
-      console.error("Erro ao selecionar sala:", error); 
+    this.socket.on("message", this.handleNewMessage);
+    this.socket.on("roomCreated", this.handleRoomCreated);
+    this.socket.on("userKicked", this.handleUserKicked);
+  },
+
+  handleNewMessage(message) {
+      this.messages = [...this.messages, message];
+      this.$nextTick(() => this.scrollToBottom());
+  },
+
+  scrollToBottom() {
+    const messageList = this.$refs.messageList;
+    if (messageList) {
+      messageList.scrollTop = messageList.scrollHeight;
     }
   },
+
+  async selectRoom(roomId) {
+      try {
+        if (this.selectedRoom) {
+          this.socket.emit("leaveRoom", this.selectedRoom);
+        }  
+
+        this.selectedRoom = roomId;
+        this.messages = [];
+        this.roomUsers = [];
+
+        this.socket.emit("joinRoom", roomId);
+        
+        await Promise.all([
+          this.loadMessages(roomId),
+          this.loadRoomUsers(roomId)
+        ]);
+      } catch (error) {
+        this.handleError(error, "Erro ao selecionar sala");
+      }
+  },
+
   async loadMessages(roomId) {
+      try {
+        const response = await fetch(`${API_URL}/rooms/${roomId}/messages`, {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Erro ao buscar mensagens");
+        }
+
+        const data = await response.json();
+        this.messages = data.messages;
+        this.$nextTick(() => this.scrollToBottom());
+
+      } catch (error) {
+        this.handleError(error, "Erro ao carregar mensagens");
+      }
+  },
+
+  async loadRoomUsers(roomId) {
     try {
-      const response = await fetch(`http://localhost:3000/rooms/${roomId}/messages`, {
+      const response = await fetch(`${API_URL}/rooms/${roomId}`, {
         headers: {
           Authorization: `Bearer ${sessionStorage.getItem("token")}`,
         },
       });
 
       if (!response.ok) {
-        throw new Error("Erro ao buscar mensagens");
+        throw new Error("Erro ao buscar utilizadores da sala");
       }
 
       const data = await response.json();
-      console.log(data);
-      this.messages = data.messages;
-
-      this.$nextTick(() => {
-        const messageList = this.$el.querySelector(".message-list");
-        if (messageList){
-          messageList.scrollTop = messageList.scrollHeight;
-        }
-      });
-
+      this.roomUsers = data.room.users;
+      this.isAdmin = data.room.isAdmin;
     } catch (error) {
-      console.error("Erro ao buscar mensagens:", error);
+      this.handleError(error, "Erro ao carregar utilizadores");
     }
   },
+
   sendMessage() {
-    if (this.newMessage.trim()) {
+      if (!this.newMessage.trim() || !this.selectedRoom) return;
+
+      const sanitizedMessage = sanitizeInput(this.newMessage.trim());
       
       const message = {
         id: new Date().getTime(),
-        text: this.newMessage.trim(),
+        text: sanitizedMessage,
       };
 
       this.socket.emit("message", {
         roomId: this.selectedRoom,
         message,
+      }, (error) => {
+        if (error) {
+          this.handleError(error, "Erro ao enviar mensagem");
+        }
       });
 
       this.newMessage = "";
+  },
+
+  handleError(error, defaultMessage) {
+      console.error(error);
+      this.showToast = true;
+      this.toastMessage = error.message || defaultMessage;
+      this.toastType = "error";
+  },
+
+  handleRoomCreated(room) {
+      if (!this.chatRooms.find((r) => r._id === room._id)) {
+        this.chatRooms.push(room);
+      }
+  },
+
+  handleUserKicked(data) {
+      if (data.userId === this.user._id) {
+        this.selectedRoom = null;
+        this.messages = [];
+        this.showToast = true;
+        this.toastMessage = "Você foi removido da sala";
+        this.toastType = "warning";
+      } else {
+        this.roomUsers = this.roomUsers.filter(user => user._id !== data.userId);
+      }
+  },
+
+  async createRoom() {
+    try {
+        const response = await fetch(`${API_URL}/rooms`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+            },
+            body: JSON.stringify(this.newRoom),
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || "Erro ao criar sala");
+        }
+
+        const data = await response.json();
+        this.chatRooms.push(data.data);
+        this.selectRoom(data.data._id);
+
+        this.showToast = true;
+        this.toastMessage = "Sala criada com sucesso!";
+        this.toastType = "success";
+        this.closeRoomCreateModal();
+    } catch (error) {
+        this.handleError(error, "Erro ao criar sala");
     }
   },
+
+  async kickUser(userId) {
+    try {
+        const response = await fetch(`${API_URL}/rooms/${this.selectedRoom}/kick`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+            },
+            body: JSON.stringify({ userId }),
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || "Erro ao expulsar usuário");
+        }
+
+        this.roomUsers = this.roomUsers.filter(user => user._id !== userId);
+        this.showToast = true;
+        this.toastMessage = "Usuário expulso com sucesso!";
+        this.toastType = "success";
+    } catch (error) {
+        this.handleError(error, "Erro ao expulsar usuário");
+    }
+  },
+
   getRoomName(roomId) {
     const room = this.chatRooms.find((room) => room._id === roomId);
     return room ? room.name : "Desconhecido";
   },
+
   logout() {
         if (this.socket) {
             this.socket.disconnect();
         }
-        sessionStorage.removeItem("token"); // Remove o token de autenticação
-        this.$router.push("/login"); // Redireciona para a página de login
+        sessionStorage.removeItem("token");
+        this.$router.push("/login");
   },
+
   openSettings() {
     this.showSettings = true;
   },
+
   updateUserProfile(userData) {
     this.user = userData;
     this.showToast = true;
@@ -273,45 +497,24 @@ methods: {
       this.showToast = false;
     }, 3000);
   },
+
   openChatModal() {
   this.showChatModal = true;
   },
+
   closeChatModal() {
     this.showChatModal = false;
   },
-  async createRoom() {
-    try {
-      const response = await fetch("http://localhost:3000/rooms", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-        },
-        body: JSON.stringify(this.newRoom),
-      });
 
-      const data = await response.json();
-      if (response.ok) {
-        this.chatRooms.push(data.data);
-        this.selectRoom(data.data.id); // Seleciona a nova sala
-        this.showToast = true;
-        this.toastMessage = "Sala criada com sucesso!";
-        this.closeRoomCreateModal();
-      } else {
-        alert(data.error || "Erro ao criar sala.");
-      }
-    } catch (error) {
-      console.error("Erro ao criar sala:", error);
-      alert("Erro ao criar sala.");
-    }
-  },
   openRoomCreateModal() {
       this.showRoomCreateModal = true;
   },
+
   closeRoomCreateModal() {
     this.showRoomCreateModal = false;
     this.resetRoomForm();
   },
+
   resetRoomForm() {
     this.newRoom = {
       name: "",
@@ -319,9 +522,12 @@ methods: {
       isPrivate: false,
     };
   },
+
+  // TODO
   openJoinByLink() {
     alert("Entrar por link/código clicado! Placeholder para funcionalidade futura.");
   },
+
   async joinRoom(roomId) {
     try {
       const response = await fetch(`http://localhost:3000/rooms/${roomId}/join`, {
@@ -347,97 +553,124 @@ methods: {
       alert("Erro ao entrar na sala.");
     }
   },
-},
-async mounted(){
-    this.socket = io("http://localhost:3000");
 
-    // get user info
+  openRoomSettings() {
+    this.showRoomSettings = true;
+    this.roomSettings.name = this.getRoomName(this.selectedRoom);
+  },
+
+  closeRoomSettings() {
+      this.showRoomSettings = false;
+  },
+
+  async saveRoomSettings() {
     try {
-        const response = await fetch("http://localhost:3000/user", {
+        const response = await fetch(`${API_URL}/rooms/${this.selectedRoom}`, {
+            method: "PUT",
             headers: {
+                "Content-Type": "application/json",
                 Authorization: `Bearer ${sessionStorage.getItem("token")}`,
             },
+            body: JSON.stringify({
+                name: this.roomSettings.name,
+            }),
         });
 
         if (!response.ok) {
-            throw new Error("Erro ao buscar usuário");
+            const data = await response.json();
+            throw new Error(data.error || "Erro ao atualizar configurações");
         }
 
-        const data = await response.json();
-        this.user = {
-            username: data.user.username,
-            bio: data.user.bio,
-            profilePicture: data.user.profilePicture,
-        };
-
+        this.showToast = true;
+        this.toastMessage = "Configurações atualizadas com sucesso!";
+        this.toastType = "success";
+        this.closeRoomSettings();
     } catch (error) {
-        console.error("Erro ao buscar dados do usuário:", error);
-        this.$router.push("/login");
+        this.handleError(error, "Erro ao atualizar configurações");
     }
+  },
 
-    // get users chat rooms
-    try {
-      const response = await fetch("http://localhost:3000/rooms", {
-        headers: {
-          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Erro ao buscar salas");
-      }
-
-      const res = await response.json();
-      console.log(res.data);
-      this.chatRooms = res.data;
-
-    } catch (error) {
-      console.error("Erro ao buscar salas:", error);
-      this.$router.push("/login");
-    }
-
-    // get public rooms
-    try {
-      const response = await fetch("http://localhost:3000/rooms/public", {
-        headers: {
-          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Erro ao buscar salas públicas");
-      }
-
-      const data = await response.json();
-      this.publicRooms = data.data;
-      console.log(data.data);
-    } catch (error) {
-      console.error("Erro ao buscar salas públicas:", error);
-    }
-
-    this.socket.on("message", (message) => {
-        this.messages = this.messages.concat(message);
-    });
-
-    this.socket.on("roomCreated", (room) => {
-      if (!this.chatRooms.find((r) => r.id === room.id)) {
-          this.chatRooms.push(room);
-      }
-    });
+  getUserAvatarStyle(user) {
+    return {
+      backgroundImage: user.profilePicture
+        ? `url(${user.profilePicture})`
+        : 'linear-gradient(135deg, #00ff2e 0%, #4facfe 100%)',
+    };
+  },
 
 },
-beforeUnmount(){
+
+async mounted() {
+    if (!sessionStorage.getItem("token")) {
+      this.$router.push("/login");
+      return;
+    }
+
+    this.initializeSocket();
+    
+    try {
+      const [userResponse, roomsResponse, publicRoomsResponse] = await Promise.all([
+        fetch(`${API_URL}/user`, {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+          },
+        }),
+        fetch(`${API_URL}/rooms`, {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+          },
+        }),
+        fetch(`${API_URL}/rooms/public`, {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+          },
+        })
+      ]);
+
+      if (!userResponse.ok || !roomsResponse.ok || !publicRoomsResponse.ok) {
+        throw new Error("Erro ao carregar dados iniciais");
+      }
+
+      const userData = await userResponse.json();
+      const roomsData = await roomsResponse.json();
+      const publicRoomsData = await publicRoomsResponse.json();
+
+      this.user = {
+        _id: userData.user._id,
+        username: userData.user.username,
+        bio: userData.user.bio,
+        profilePicture: userData.user.profilePicture,
+      };
+
+      this.chatRooms = roomsData.data;
+      this.publicRooms = publicRoomsData.data;
+
+    } catch (error) {
+      this.handleError(error, "Erro ao carregar dados iniciais");
+      this.$router.push("/login");
+    }
+},
+
+beforeUnmount() {
     if (this.socket) {
-        this.socket.disconnect();
+      this.socket.disconnect();
     }
 },
 computed: {
-  profilePictureStyle() {
-    return this.user.profilePicture
-      ? { backgroundImage: `url(${this.user.profilePicture})`, backgroundSize: "cover" }
-      : { background: "linear-gradient(135deg, #00ff2fe 0%, #4facfe 100%)" };
+    profilePictureStyle() {
+      return this.user.profilePicture
+        ? { backgroundImage: `url(${this.user.profilePicture})`, backgroundSize: "cover" }
+        : { background: "linear-gradient(135deg, #00f2fe 0%, #4facfe 100%)" };
+    },
+    canSendMessage() {
+      return this.selectedRoom && this.socket?.connected;
+    }
+},
+watch: {
+    messages() {
+      this.$nextTick(() => this.scrollToBottom());
+    }
   }
-}
 };
 </script>
 
@@ -451,7 +684,7 @@ color: #fff;
 font-family: "Inter", sans-serif;
 }
 
-/* Informações do usuário */
+/* Informações do user */
 .user-info {
 width: 20%;
 background: rgba(0, 0, 0, 0.5);
@@ -576,76 +809,223 @@ cursor: pointer;
 
 /* Janela de mensagens */
 .chat-window {
-flex: 1;
-display: flex;
-flex-direction: column;
-padding: 1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden; /* Importante */
+}
+
+.chat-window .no-room-selected {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.9rem;
+  color: #a8b2d1;
+  flex: 1;
+}
+
+.chat-window-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chat-window-header h3 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #4facfe;
+  margin: 0;
+}
+
+.settings-icon {
+  cursor: pointer;
+  color: #4facfe;
+  font-size: 1.2rem;
+}
+
+.settings-icon:hover {
+  color: #00f2fe;
 }
 
 .messages {
-flex: 1;
-display: flex;
-flex-direction: column;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .message-list {
-flex: 1;
-overflow-y: auto;
-margin-bottom: 1rem;
+  flex: 1;
+  overflow-y: auto;
+  max-height: 90vh;
+  padding: 1rem;
 }
 
 .message-item {
-display: flex;
-align-items: flex-start;
-margin-bottom: 1rem;
-border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-padding-bottom: 0.5rem;
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.5rem;
 }
 
 .message-avatar {
-width: 40px;
-height: 40px;
-border-radius: 50%;
-background: #4facfe;
-margin-right: 0.8rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #4facfe;
+  margin-right: 0.8rem;
+  margin-top: 0.3rem;
 }
 
 .message-content {
-flex: 1;
+  flex: 1;
 }
 
 .message-user {
-font-weight: bold;
-margin-bottom: 0.2rem;
-color: #4facfe;
+  font-weight: bold;
+  margin-bottom: 0.2rem;
+  color: #4facfe;
 }
 
 .message-text {
-font-size: 0.9rem;
-color: #fff;
+  font-size: 0.9rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #fff;
 }
 
 /* Input de mensagem */
 .message-input {
-display: flex;
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .message-input input {
-flex: 1;
-padding: 0.5rem;
-border: 1px solid rgba(255, 255, 255, 0.1);
-border-radius: 5px;
-margin-right: 0.5rem;
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  margin-right: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
 }
 
 .message-input button {
-padding: 0.5rem;
-background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
-border: none;
-color: white;
-border-radius: 5px;
-cursor: pointer;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+  border: none;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s ease;
 }
+
+.message-input button:hover {
+  background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+}
+
+
+/* Estilo Lista de Utilizadores */
+.user-list {
+  width: 20%;
+  background: rgba(0, 0, 0, 0.30);
+  padding: 20px;
+  border-left: 5px solid rgba(0, 0, 0, 0.60);
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+  overflow-y: auto;
+}
+
+.user-list:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.user-list h3 {
+  margin-bottom: 20px;
+  font-size: 18px;
+  color: #fff;
+  text-align: center;
+}
+
+.user-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.user-list li {
+  display: flex;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: background-color 0.3s ease;
+}
+
+.user-list li:hover {
+  border-radius: 8px;
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.user-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  margin-right: 15px;
+  margin-left: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.user-list span {
+  font-size: 18px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: bold;
+  color: #fff;
+}
+
+/* Modal de configurações */
+
+.room-users {
+  margin: 1rem 0;
+}
+
+.room-user-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.kick-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.kick-btn:hover {
+  background: #dc2626;
+}
+
 
 /* Modal adicionar chats */
 .modal-overlay {
@@ -755,5 +1135,219 @@ background: #dc2626;
   background: transparent;
   color: #fff;
 }
+
+/* Estilos específicos para o modal de configurações de sala */
+.room-settings-modal .modal-content {
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  background: #1a1a2e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  overflow-y: hidden;
+}
+
+.room-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.room-settings-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #4facfe;
+}
+
+.close-icon {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: color 0.3s ease;
+}
+
+.close-icon:hover {
+  color: #ef4444;
+}
+
+.room-settings-body {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: hidden;
+}
+
+.room-name-group {
+  margin-bottom: 2rem;
+}
+
+.room-name-input {
+  width: 100%;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.room-name-input:focus {
+  border-color: #4facfe;
+  outline: none;
+}
+
+.room-users-section {
+  margin-top: 1.5rem;
+}
+
+.room-users-section h4 {
+  color: #4facfe;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.room-users-list {
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.room-users-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.room-users-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.room-users-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.room-user-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  transition: background 0.3s ease;
+}
+
+.room-user-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.room-user-item .user-info {
+  width: 45%;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: none;
+}
+
+.room-user-item .user-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.room-user-item .user-name {
+  margin-right: 0.2rem;
+  font-size: 1rem;
+  color: #fff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: bold;
+}
+
+.room-user-item .kick-btn {
+  padding: 0.5rem 1rem;
+  margin-right: 2rem;
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid #ef4444;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.room-user-item .kick-btn:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+.room-settings-footer {
+  padding: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.save-btn, .cancel-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.save-btn {
+  background: #4facfe;
+  color: #fff;
+  border: none;
+}
+
+.save-btn:hover {
+  background: #0077c2;
+}
+
+.cancel-btn {
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 768px) {
+  .room-settings-modal .modal-content {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .room-users-list {
+    max-height: 250px;
+  }
+
+  .room-user-item {
+    padding: 0.5rem;
+  }
+
+  .room-user-item .user-avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .room-user-item .kick-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+}
+
 
 </style>
