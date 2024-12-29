@@ -44,6 +44,7 @@ router.get("/user", userAuth, (req, res) => {
 
     res.status(200).json({
         user: {
+            _id: req.user._id.toString(),
             username,
             bio: req.user.bio || "Nenhuma biografia disponível",
             profilePicture: req.user.profilePicture || null,
@@ -202,6 +203,34 @@ router.delete("/rooms/:roomId", authenticate, async (req, res) => {
     } catch (err) {
         console.error("Erro ao excluir sala:", err);
         res.status(500).json({ error: "Erro ao excluir sala" });
+    }
+});
+
+router.get("/rooms/:roomId", authenticate, async (req, res) => {
+    try {
+        const roomId = req.params.roomId;
+
+        const room = await Room.findById(roomId).populate("users").populate("creator");
+
+        if (!room) {
+            return res.status(404).json({ error: "Sala não encontrada" });
+        }
+
+        // Verifique se o usuário logado é o criador da sala (administrador)
+        const isAdmin = room.creator._id.toString() === req.user.id;
+
+        res.json({
+            room: {
+                name: room.name,
+                capacity: room.capacity,
+                isPrivate: room.isPrivate,
+                users: room.users,
+                isAdmin,
+            },
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Erro ao buscar informações da sala" });
     }
 });
 

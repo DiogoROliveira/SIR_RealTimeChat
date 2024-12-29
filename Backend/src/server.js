@@ -49,7 +49,42 @@ io.on("connection", (socket) => {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             socket.userId = decoded.id;
         } catch (err) {
-            console.error("Erro na autenticação do socket:", err);
+            console.error("Erro na autenticação do socket:", err.message);
+            socket.emit("authError", "Erro na autenticação do socket: jwt expired");
+        }
+    });
+
+    socket.on("createRoom", async (data) => {
+        try {
+            const { name, description } = data;
+
+            if (!socket.userId) {
+                console.log("🔒 User not authenticated");
+                return;
+            }
+
+            const user = await User.findById(socket.userId);
+            if (!user) {
+                console.log("❌ User not found");
+                return;
+            }
+
+            const room = new Room({
+                name,
+                description,
+                owner: user._id,
+                members: [user._id],
+            });
+
+            await room.save();
+            console.log(`🚪 Room created: ${room._id}`);
+
+            user.rooms.push(room._id);
+            await user.save();
+
+            socket.emit("roomCreated", room);
+        } catch (err) {
+            console.error("❌ Error creating room: ", err);
         }
     });
 
