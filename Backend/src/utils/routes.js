@@ -1,5 +1,6 @@
 const { register, login, authenticate, userAuth } = require("./auth");
 const { Router } = require("express");
+const { mongoose } = require("mongoose");
 const Room = require("../models/Room");
 const User = require("../models/User");
 const router = new Router();
@@ -126,7 +127,7 @@ router.post("/rooms", authenticate, async (req, res) => {
             success: true,
             message: "Sala criada com sucesso",
             data: {
-                id: room.id,
+                _id: room.id,
                 name: room.name,
                 isPrivate: room.isPrivate,
                 accessCode: room.accessCode || null,
@@ -209,6 +210,10 @@ router.delete("/rooms/:roomId", authenticate, async (req, res) => {
 router.get("/rooms/:roomId", authenticate, async (req, res) => {
     try {
         const roomId = req.params.roomId;
+
+        if (!roomId || !mongoose.Types.ObjectId.isValid(roomId)) {
+            return res.status(400).json({ error: "ID da sala inválido" });
+        }
 
         const room = await Room.findById(roomId).populate("users").populate("creator");
 
@@ -397,15 +402,30 @@ router.get("/rooms/:roomId/messages", authenticate, async (req, res) => {
         }
 
         // Formata as mensagens para retornar
-        const messages = room.messages.map((msg) => ({
-            id: msg._id,
-            text: msg.message,
-            user: {
-                username: msg.user.username,
-                profilePicture: msg.user.profilePicture,
-            },
-            timestamp: msg.timestamp,
-        }));
+        const messages = room.messages.map((msg) => {
+            if (!msg.user) {
+                return {
+                    id: msg._id,
+                    text: msg.message,
+                    user: {
+                        username: "Sistema",
+                        profilePicture: null,
+                    },
+                    type: msg.type,
+                    timestamp: msg.timestamp,
+                };
+            }
+            return {
+                id: msg._id,
+                text: msg.message,
+                user: {
+                    username: msg.user.username,
+                    profilePicture: msg.user.profilePicture,
+                },
+                type: msg.type,
+                timestamp: msg.timestamp,
+            };
+        });
 
         res.status(200).json({ messages });
     } catch (err) {

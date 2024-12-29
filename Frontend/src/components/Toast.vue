@@ -25,10 +25,6 @@ export default {
         return ['success', 'error', 'warning', 'info'].indexOf(value) !== -1
       }
     },
-    setTimeout: {
-      type: Number,
-      default: 3000
-    }
   }
 }
 </script>

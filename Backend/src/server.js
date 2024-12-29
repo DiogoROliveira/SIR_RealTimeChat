@@ -10,6 +10,7 @@ const routes = require("./utils/routes");
 const Room = require("./models/Room");
 const User = require("./models/User");
 const { timeStamp } = require("console");
+const { SocketAddress } = require("net");
 
 dotenv.config();
 
@@ -88,14 +89,65 @@ io.on("connection", (socket) => {
         }
     });
 
-    socket.on("joinRoom", (roomId) => {
-        socket.join(roomId);
-        console.log(`🔊 User ${socket.id} joined room: ${roomId}`);
+    socket.on("joinRoom", async (roomId) => {
+        try {
+            if (!socket.userId) return;
+
+            const user = await User.findById(socket.userId);
+
+            if (!user) return;
+
+            socket.join(roomId);
+
+            const room = await Room.findById(roomId).populate("users");
+            if (!room) return;
+
+            sysMessage = {
+                user: null,
+                message: `${user.username} entrou na sala!`,
+                type: "join",
+                timestamp: new Date(),
+            };
+
+            room.messages.push(sysMessage);
+            await room.save();
+
+            io.to(roomId).emit("systemMessage", sysMessage);
+
+            console.log(`🔊 User ${socket.id} joined room: ${roomId}`);
+        } catch (err) {
+            console.error("Error in joinRoom:", err);
+        }
     });
 
-    socket.on("leaveRoom", (roomId) => {
-        socket.leave(roomId);
-        console.log(`🔇 User ${socket.id} left room: ${roomId}`);
+    socket.on("leaveRoom", async (roomId) => {
+        try {
+            if (!socket.userId) return;
+
+            const user = await User.findById(socket.userId);
+            if (!user) return;
+
+            socket.leave(roomId);
+
+            const room = await Room.findById(roomId).populate("users");
+            if (!room) return;
+
+            sysMessage = {
+                user: null,
+                message: `${user.username} saiu da sala!`,
+                type: "leave",
+                timestamp: new Date(),
+            };
+
+            room.messages.push(sysMessage);
+            await room.save();
+
+            io.to(roomId).emit("systemMessage", sysMessage);
+            io.to(roomId).emit("updateUsers", room);
+            console.log(`🔇 User ${socket.id} left room: ${roomId}`);
+        } catch (err) {
+            console.error("Error in leaveRoom: ", err);
+        }
     });
 
     socket.on("message", async (data) => {
@@ -116,6 +168,7 @@ io.on("connection", (socket) => {
             const messageObj = {
                 user: socket.userId,
                 message: message.text,
+                type: null,
                 timeStamp: new Date(),
             };
 
@@ -139,11 +192,47 @@ io.on("connection", (socket) => {
         }
     });
 
+    socket.on("kickUser", async (data) => {
+        try {
+            const { roomId, userId } = data;
+            const user = await User.findById(userId);
+            if (!user) return;
+
+            const room = await Room.findById(roomId).populate("users");
+            if (!room) return;
+
+            sysMessage = {
+                user: null,
+                message: `${user.username} foi removido da sala!`,
+                type: "kick",
+                timestamp: new Date(),
+            };
+
+            room.messages.push(sysMessage);
+            await room.save();
+            io.to(roomId).emit("systemMessage", sysMessage);
+            io.to(roomId).emit("userKicked", { userId, roomId });
+        } catch (err) {
+            console.error("Error in kickUser: ", err);
+        }
+    });
+
+    socket.on("selectRoom", async (roomId) => {
+        socket.join(roomId);
+        console.log(`🔊 User ${socket.id} joined room: ${roomId}`);
+    });
+
+    socket.on("deselectRoom", async (roomId) => {
+        socket.leave(roomId);
+        console.log(`🔇 User ${socket.id} left room: ${roomId}`);
+    });
+    /*
     // Enviar uma mensagem para uma sala específica
     socket.on("sendMessage", (roomId, message) => {
         io.to(roomId).emit("message", message); // Enviar a mensagem para todos na sala
         console.log(`📩 Message sent to room ${roomId}: ${message}`);
     });
+    */
 
     // Desconectar o usuário
     socket.on("disconnect", () => {

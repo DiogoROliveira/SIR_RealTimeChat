@@ -110,22 +110,32 @@
           <div v-if="isAdmin" class="settings-icon" @click="openRoomSettings">
             ⚙️
           </div>
+          <button 
+            v-if="!isAdmin" 
+            @click="showLeaveModal = true"
+            class="leave-room-btn"
+          >
+            Sair  <font-awesome-icon :icon="['fas', 'door-open']" />
+          </button>
         </div>
         <div class="message-list" ref="messageList">
-          <div class="message-item" v-for="message in messages" :key="message.id">
-            <div
-              class="message-avatar"
-              :style="{
-                backgroundImage: message.user.profilePicture
-                  ? `url(${message.user.profilePicture})`
-                  : 'linear-gradient(135deg, #00ff2fe 0%, #4facfe 100%)',
-                backgroundSize: 'cover'
-              }"
-            ></div>
-            <div class="message-content">
-              <p class="message-user">{{ message.user.username }}</p>
-              <p class="message-text">{{ message.text }}</p>
-            </div>
+          <div 
+              class="message-item" 
+              :class="{ 'system-message': message.type }"
+              v-for="message in messages" 
+              :key="message.id"
+          >
+              <div 
+                  v-if="!message.type" 
+                  class="message-avatar"
+                  :style="message.user.profilePicture ? 
+                          `background-image: url(${message.user.profilePicture})` : 
+                          'background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%)'"
+              ></div>
+              <div class="message-content">
+                  <p class="message-user" v-if="!message.type">{{ message.user.username }}</p>
+                  <p class="message-text" :class="{ 'system-text': message.type }">{{ message.text }}</p>
+              </div>
           </div>
         </div>
         <div class="message-input">
@@ -221,8 +231,16 @@
 <Toast 
     :show="showToast"
     :message="toastMessage"
-    type="success"
+    :type="toastType"
 />
+
+<LeaveRoomModal 
+  :show="showLeaveModal"
+  :room-name="getRoomName(selectedRoom)"
+  @close="showLeaveModal = false"
+  @confirm="leaveRoom"
+/>
+
 </template>
 
 <script>
@@ -230,7 +248,9 @@
 import { io } from "socket.io-client";
 import UserSettings from "./UserSettings.vue";
 import Toast from './Toast.vue';
+import LeaveRoomModal from './LeaveRoomModal.vue';
 import { sanitizeInput } from './utils/security';
+
 
 const API_URL = 'http://localhost:3000';
 
@@ -239,6 +259,7 @@ export default {
   components: {
     UserSettings,
     Toast,
+    LeaveRoomModal,
   },
   data() {
     return {
@@ -271,6 +292,7 @@ export default {
       roomSettings: {
         name: '',
       },
+      showLeaveModal: false,
     };
   },
   methods: {
@@ -287,7 +309,7 @@ export default {
         this.socket.emit("authenticate", sessionStorage.getItem("token"));
     });
 
-    // This isnt working idk why
+    // Kinda working now (still would prefer a toke refreshing system, maybe later will do)
     this.socket.on("authError", (message) => {
         this.logout();
     });
@@ -295,6 +317,8 @@ export default {
     this.socket.on("message", this.handleNewMessage);
     this.socket.on("roomCreated", this.handleRoomCreated);
     this.socket.on("userKicked", this.handleUserKicked);
+    this.socket.on("systemMessage", this.handleSystemMessage);
+    this.socket.on("updateUsers", this.handleUpdateUsers);
   },
 
   handleNewMessage(message) {
@@ -312,14 +336,14 @@ export default {
   async selectRoom(roomId) {
       try {
         if (this.selectedRoom) {
-          this.socket.emit("leaveRoom", this.selectedRoom);
+          this.socket.emit("deselectRoom", this.selectedRoom);
         }  
 
         this.selectedRoom = roomId;
         this.messages = [];
         this.roomUsers = [];
 
-        this.socket.emit("joinRoom", roomId);
+        this.socket.emit("selectRoom", roomId);
         
         await Promise.all([
           this.loadMessages(roomId),
@@ -371,6 +395,25 @@ export default {
     }
   },
 
+  async loadPublicRooms() {
+    try {
+        const response = await fetch(`${API_URL}/rooms/public`, {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+          },
+        });
+
+        if(!response.ok){
+          throw new Error("Erro ao buscar salas públicas");
+        }
+
+        const data = await response.json();
+        this.publicRooms = data.data;
+      } catch (err) {
+        this.handleError(err, "Erro ao carregar salas públicas");
+      }
+  },
+
   sendMessage() {
       if (!this.newMessage.trim() || !this.selectedRoom) return;
 
@@ -398,6 +441,9 @@ export default {
       this.showToast = true;
       this.toastMessage = error.message || defaultMessage;
       this.toastType = "error";
+      setTimeout(() => {
+          this.showToast = false;
+      }, 3000);
   },
 
   handleRoomCreated(room) {
@@ -410,11 +456,16 @@ export default {
       if (data.userId === this.user._id) {
         this.selectedRoom = null;
         this.messages = [];
+        this.chatRooms = this.chatRooms.filter(room => room._id !== data.roomId);
         this.showToast = true;
         this.toastMessage = "Você foi removido da sala";
         this.toastType = "warning";
+        setTimeout(() => {
+          this.showToast = false;
+        }, 3000);
       } else {
         this.roomUsers = this.roomUsers.filter(user => user._id !== data.userId);
+        this.loadRoomUsers;
       }
   },
 
@@ -436,12 +487,15 @@ export default {
 
         const data = await response.json();
         this.chatRooms.push(data.data);
-        this.selectRoom(data.data._id);
 
         this.showToast = true;
         this.toastMessage = "Sala criada com sucesso!";
         this.toastType = "success";
+        setTimeout(() => {
+          this.showToast = false;
+        }, 3000);
         this.closeRoomCreateModal();
+        this.closeChatModal();
     } catch (error) {
         this.handleError(error, "Erro ao criar sala");
     }
@@ -462,11 +516,21 @@ export default {
             const data = await response.json();
             throw new Error(data.error || "Erro ao expulsar usuário");
         }
+        
+        console.log(userId);
+
+        this.socket.emit("kickUser", {
+          roomId: this.selectedRoom,
+          userId: userId
+        });
 
         this.roomUsers = this.roomUsers.filter(user => user._id !== userId);
         this.showToast = true;
         this.toastMessage = "Usuário expulso com sucesso!";
         this.toastType = "success";
+        setTimeout(() => {
+          this.showToast = false;
+        }, 3000);
     } catch (error) {
         this.handleError(error, "Erro ao expulsar usuário");
     }
@@ -498,8 +562,13 @@ export default {
     }, 3000);
   },
 
-  openChatModal() {
-  this.showChatModal = true;
+  async openChatModal() {
+    try {
+      await this.loadPublicRooms();
+      this.showChatModal = true;
+    } catch (err) {
+      console.error(err);
+    }
   },
 
   closeChatModal() {
@@ -530,7 +599,7 @@ export default {
 
   async joinRoom(roomId) {
     try {
-      const response = await fetch(`http://localhost:3000/rooms/${roomId}/join`, {
+      const response = await fetch(`${API_URL}/rooms/${roomId}/join`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${sessionStorage.getItem("token")}`,
@@ -539,18 +608,71 @@ export default {
 
       const data = await response.json();
 
-      if (response.ok) {
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Erro ao entrar na sala");
+      }
+
         this.chatRooms.push(data.room);  
+
+        this.socket.emit("joinRoom", roomId);
+
         this.selectRoom(data.room._id);  
+
+        this.publicRooms = this.publicRooms.filter(room => room._id !== roomId);
+
         this.showToast = true;
         this.toastMessage = "Entrou na sala com sucesso!";
+        setTimeout(() => {
+          this.showToast = false;
+        }, 3000);
         this.closeChatModal();
-      } else {
-        alert(data.error || "Erro ao entrar na sala.");
-      }
+
     } catch (error) {
       console.error("Erro ao entrar na sala:", error);
       alert("Erro ao entrar na sala.");
+    }
+  },
+
+  async leaveRoom() {
+    try {
+      const response = await fetch(`${API_URL}/rooms/${this.selectedRoom}/leave`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Erro ao sair da sala");
+      }
+
+
+      // Emitir evento de saída para o socket
+      this.socket.emit("leaveRoom", this.selectedRoom);
+      
+      // Remover a sala da lista de salas
+      this.chatRooms = this.chatRooms.filter(room => room._id !== this.selectedRoom);
+      
+      // Resetar a sala selecionada
+      this.selectedRoom = null;
+      this.messages = [];
+      
+      // Fechar o modal
+      this.showLeaveModal = false;
+      
+      // Mostrar mensagem de sucesso
+      this.showToast = true;
+      this.toastMessage = "Você saiu da sala com sucesso";
+      this.toastType = "success";
+      setTimeout(() => {
+        this.showToast = false;
+      }, 3000);
+      
+    } catch (error) {
+      this.handleError(error, "Erro ao sair da sala");
+      this.showLeaveModal = false;
     }
   },
 
@@ -598,6 +720,29 @@ export default {
     };
   },
 
+  async handleSystemMessage(message) {
+    try {
+    const systemMessage = {
+      ...message,
+      user: {
+        username: "Sistema",
+        profilePicture: null,
+      }
+    };
+
+    this.messages = [...this.messages, systemMessage];
+    await this.loadMessages(this.selectedRoom);  
+    this.$nextTick(() => this.scrollToBottom());
+  } catch (err) {
+    console.error(err);
+  }
+
+  },
+
+  handleUpdateUsers(room) {
+    this.loadRoomUsers(room._id);
+    this.loadMessages(room._id);
+  }
 },
 
 async mounted() {
@@ -813,7 +958,7 @@ cursor: pointer;
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow: hidden; /* Importante */
+  overflow: hidden;
 }
 
 .chat-window .no-room-selected {
@@ -851,6 +996,22 @@ cursor: pointer;
   color: #00f2fe;
 }
 
+.leave-room-btn {
+  padding: 0.5rem 1rem;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  }
+
+  .leave-room-btn:hover {
+  background: #dc2626;
+}
+
 .messages {
   flex: 1;
   display: flex;
@@ -860,7 +1021,7 @@ cursor: pointer;
 .message-list {
   flex: 1;
   overflow-y: auto;
-  max-height: 90vh;
+  max-height: 85vh;
   padding: 1rem;
 }
 
@@ -895,6 +1056,17 @@ cursor: pointer;
   font-size: 0.9rem;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #fff;
+}
+
+.system-message {
+    text-align: center;
+    margin: 10px 0;
+}
+
+.system-text {
+    color: #666;
+    font-style: italic;
+    font-size: 0.9em;
 }
 
 /* Input de mensagem */
