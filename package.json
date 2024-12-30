@@ -1,0 +1,14 @@
+{
+    "name": "chat-app",
+    "scripts": {
+      "install-all": "npm install && cd Frontend && npm install && cd ../Backend && npm install",
+      "copy-env": "copy Backend\\src\\.env Backend\\.env",
+      "build": "cd Frontend && npm run build && cd ../Backend && npm run build",
+      "start": "cd Backend && node src/server.js",
+      "dev": "concurrently \"cd Backend && npm run dev\" \"cd Frontend && npm run dev\"",
+      "deploy": "npm run install-all && npm run copy-env && npm run build && npm start"
+    },
+    "devDependencies": {
+      "concurrently": "^8.2.0"
+    }
+}

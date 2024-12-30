@@ -10,9 +10,9 @@ const routes = require("./utils/routes");
 const Room = require("./models/Room");
 const User = require("./models/User");
 const { timeStamp } = require("console");
-const { SocketAddress } = require("net");
+const path = require("path");
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, ".env") });
 
 if (!process.env.MONGO_URI) {
     console.error("⚠️ MONGO_URI não está configurado no .env");
@@ -36,10 +36,18 @@ app.use(express.urlencoded({ extended: true }));
 // Rotas
 app.use("/", routes);
 
+// Serve files
+app.use(express.static(path.join(__dirname, "../../Frontend/dist")));
+app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../../Frontend/dist/index.html"));
+});
+
 // Endpoint de teste
+/*
 app.get("/", (req, res) => {
     res.send("Chat App Backend Running");
 });
+ */
 
 // WebSocket connection
 io.on("connection", (socket) => {
@@ -86,6 +94,16 @@ io.on("connection", (socket) => {
             socket.emit("roomCreated", room);
         } catch (err) {
             console.error("❌ Error creating room: ", err);
+        }
+    });
+
+    socket.on("roomDeleted", async (roomId) => {
+        try {
+            const room = await Room.findById(roomId).populate("users");
+            if (!room) return;
+            io.to(roomId).emit("roomDeleted", { roomId });
+        } catch (err) {
+            console.error("Error in roomDeleted: ", err);
         }
     });
 

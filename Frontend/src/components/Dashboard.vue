@@ -1,4 +1,3 @@
-<!-- TODO: fazer parte de entrar num grupo privado com um referral code --> 
 <!-- TODO: indicador de capacidade de um grupo e indicador de numero de utilizadores (also, maybe fazer se capacidade == 0 ent é inf)-->
 <template>
   <div class="dashboard">
@@ -152,7 +151,7 @@
 
 
     <div v-if="selectedRoom" class="user-list">
-      <h3>Utilizadores no grupo</h3>
+      <h3>Utilizadores</h3>  
       <ul>
         <li v-for="user in roomUsers" :key="user._id">
           <div class="user-avatar" :style="getUserAvatarStyle(user)"></div>
@@ -162,7 +161,6 @@
     </div>
 
     <!-- ! Implementar divisao por componentes -->
-    <!-- Modal de Configurações da Sala -->
     <!-- Modal de Configurações da Sala -->
     <div v-if="showRoomSettings" class="modal-overlay room-settings-modal" @click.self="closeRoomSettings">
       <div class="modal-content room-settings-content">
@@ -226,6 +224,7 @@
         </div>
 
         <div class="room-settings-footer">
+          <button @click="deleteRoom" class="delete-btn">Apagar Sala</button>
           <button @click="saveRoomSettings" class="save-btn">Salvar</button>
           <button @click="closeRoomSettings" class="cancel-btn">Cancelar</button>
         </div>
@@ -273,7 +272,7 @@ import LeaveRoomModal from './LeaveRoomModal.vue';
 import JoinPrivateRoom from "./JoinPrivateRoom.vue";
 import { sanitizeInput } from './utils/security';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = 'http://localhost:3000'; // add the server URL to host locally (htt://localhost:3000)
 
 export default {
   name: "Dashboard",
@@ -348,6 +347,22 @@ export default {
     this.socket.on("userKicked", this.handleUserKicked);
     this.socket.on("systemMessage", this.handleSystemMessage);
     this.socket.on("updateUsers", this.handleUpdateUsers);
+
+    this.socket.on("roomDeleted", ({ roomId }) => {
+        if (this.selectedRoom === roomId) {
+            this.selectedRoom = null;
+            this.messages = [];
+            
+            this.showToast = true;
+            this.toastMessage = "A sala foi excluída pelo administrador";
+            this.toastType = "warning";
+            setTimeout(() => {
+                this.showToast = false;
+            }, 3000);
+        }
+        
+        this.chatRooms = this.chatRooms.filter(room => room._id !== roomId);
+    });
   },
 
 
@@ -371,7 +386,9 @@ export default {
         }
 
         const data = await response.json();
-        this.chatRooms.push(data.data);
+        
+        await this.loadRooms();
+
 
         this.showToast = true;
         this.toastMessage = "Sala criada com sucesso!";
@@ -383,6 +400,44 @@ export default {
         this.closeChatModal();
     } catch (error) {
         this.handleError(error, "Erro ao criar sala");
+    }
+  },
+
+  async deleteRoom() {
+    if (!confirm('Tem certeza que deseja apagar esta sala? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    try {
+      this.socket.emit("roomDeleted", this.selectedRoom);
+      const response = await fetch(`${API_URL}/rooms/${this.selectedRoom}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem('token')}`,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Erro ao apagar sala');
+      }
+
+      this.chatRooms = this.chatRooms.filter(room => room._id !== this.selectedRoom);
+            
+      this.selectedRoom = null;
+      this.messages = [];
+      
+
+      this.closeRoomSettings();
+      this.showToast = true;
+      this.toastMessage = 'Sala apagada com sucesso';
+      this.toastType = 'success';
+      setTimeout(() => {
+        this.showToast = false;
+      }, 3000);
+      
+    } catch (error) {
+      this.handleError(error, 'Erro ao apagar sala');
     }
   },
 
@@ -603,6 +658,25 @@ export default {
       } catch (err) {
         this.handleError(err, "Erro ao carregar salas públicas");
       }
+  },
+
+  async loadRooms() {
+    try {
+      const response = await fetch(`${API_URL}/rooms`, {
+        headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+        },
+      });
+
+      if(!response.ok) {
+        throw new Error("Erro ao buscar salas");
+      }
+
+      const data = await response.json();
+      this.chatRooms = data.data;
+    } catch (err) {
+      this.handleError(err, "Erro ao carregar salas");
+    }
   },
 
 
@@ -1665,6 +1739,20 @@ background: #dc2626;
 
 .cancel-btn:hover {
   background: rgba(255, 255, 255, 0.1);
+}
+
+.delete-btn {
+  background-color: #dc3545;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: auto; 
+}
+
+.delete-btn:hover {
+  background-color: #c82333;
 }
 
 @media (max-width: 768px) {

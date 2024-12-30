@@ -7,10 +7,10 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 /* import specific icons */
-import { faUserSecret, faDoorOpen } from "@fortawesome/free-solid-svg-icons";
+import { faUserSecret, faDoorOpen, faUser } from "@fortawesome/free-solid-svg-icons";
 
 /* add icons to the library */
-library.add(faUserSecret, faDoorOpen);
+library.add(faUserSecret, faDoorOpen, faUser);
 
 import { createApp } from "vue";
 import App from "./App.vue";
