@@ -127,7 +127,7 @@ router.post("/rooms", authenticate, async (req, res) => {
             success: true,
             message: "Sala criada com sucesso",
             data: {
-                _id: room.id,
+                id: room.id,
                 name: room.name,
                 isPrivate: room.isPrivate,
                 accessCode: room.accessCode || null,
@@ -290,13 +290,7 @@ router.post("/rooms/:roomId/join", authenticate, async (req, res) => {
             return res.status(404).json({ error: "Sala não encontrada" });
         }
 
-        // Se a sala for privada, verificar o código de acesso (pode ser feito de várias formas)
-        if (room.isPrivate) {
-            const { accessCode } = req.body;
-            if (!accessCode || accessCode !== room.accessCode) {
-                return res.status(403).json({ error: "Código de acesso inválido" });
-            }
-        }
+        // ! Logica de room privada foi para outro endpoint!
 
         // Verificar se o usuário já está na sala
         if (room.users.includes(req.user.id)) {
@@ -309,6 +303,39 @@ router.post("/rooms/:roomId/join", authenticate, async (req, res) => {
         }
 
         // Adicionar o usuário à sala
+        room.users.push(req.user.id);
+        await room.save();
+
+        res.status(200).json({ message: "Você entrou na sala com sucesso", room });
+    } catch (err) {
+        console.error("Erro ao entrar na sala:", err);
+        res.status(500).json({ error: "Erro ao entrar na sala" });
+    }
+});
+
+router.post("/rooms/:accessCode/joinP", authenticate, async (req, res) => {
+    try {
+        const room = await Room.findOne({ accessCode: req.params.accessCode });
+
+        if (!room) {
+            return res.status(404).json({ error: "Sala não encontrada" });
+        }
+
+        if (room.isPrivate) {
+            const { accessCode } = req.body;
+            if (!accessCode || accessCode !== room.accessCode) {
+                return res.status(403).json({ error: "Código de acesso inválido" });
+            }
+        }
+
+        if (room.users.includes(req.user.id)) {
+            return res.status(400).json({ error: "Você já está nesta sala" });
+        }
+
+        if (room.capacity && room.users.length >= room.capacity) {
+            return res.status(400).json({ error: "Sala cheia" });
+        }
+
         room.users.push(req.user.id);
         await room.save();
 
