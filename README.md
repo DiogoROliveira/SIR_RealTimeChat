@@ -197,7 +197,7 @@ npm run dev
 
 A aplicação está implementada no render.com. Tanto o Frontend como o Backend estão implementados no mesmo URL, uma vez que o Backend serve os ficheiros estáticos do Frontend:
 
--   URL da Aplicação: [URL a ser adicionado]
+-   URL da Aplicação: https://project-assignment-2-29950-29216.onrender.com
 
 ## Contribuições
 
