@@ -6,7 +6,7 @@
       "build": "cd Frontend && npm run build && cd ../Backend && npm run build",
       "start": "cd Backend && node src/server.js",
       "dev": "concurrently \"cd Backend && npm run dev\" \"cd Frontend && npm run dev\"",
-      "deploy": "npm run install-all && npm run copy-env && npm run build && npm start"
+      "deploy": "npm run install-all && npm run build && npm start"
     },
     "devDependencies": {
       "concurrently": "^8.2.0"
