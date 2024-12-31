@@ -271,7 +271,7 @@ import CapacitySlider from './CapacitySlider.vue';
 import ConfirmationModal from './ConfirmationModal.vue';
 import { sanitizeInput } from './utils/security';
 
-const API_URL = 'https://project-assignment-2-29950-29216.onrender.com'; // to host locally (http://localhost:3000)
+const API_URL = ''; // to host locally (http://localhost:3000)
 
 export default {
   name: "Dashboard",
