@@ -1,13 +1,13 @@
 export const sanitizeInput = (input) => {
     if (typeof input !== "string") return "";
 
-    // Remove HTML tags
+    // removes html-like tags
     let sanitized = input.replace(/<[^>]*>/g, "");
 
-    // Remove script tags and content
+    // clean up any scripts
     sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
 
-    // Escape special characters
+    // escape special chars
     sanitized = sanitized
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
@@ -15,7 +15,6 @@ export const sanitizeInput = (input) => {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 
-    // Trim whitespace
     sanitized = sanitized.trim();
 
     return sanitized;

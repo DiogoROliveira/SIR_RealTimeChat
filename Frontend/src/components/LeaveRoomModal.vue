@@ -121,6 +121,7 @@
 .cancel-btn {
   background: transparent;
   color: #fff;
+  scale: 1.05;
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 

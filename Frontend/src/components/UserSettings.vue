@@ -165,11 +165,16 @@ export default {
     cursor: pointer;
     font-weight: 500;
     margin: 0.5rem;
+    transition: all 0.3s ease-in-out;
 }
 
 .upload-btn {
     background: #4facfe;
     color: white;
+}
+
+.upload-btn:hover {
+    background: #0077c2;
 }
 
 .bio-section {
@@ -199,10 +204,18 @@ textarea {
     color: white;
 }
 
+.save-btn:hover {
+    background: #0077c2;
+}
+
 .cancel-btn {
     background: transparent;
     border: 1px solid #4facfe;
     color: #4facfe;
+}
+
+.cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
 }
 
 small {

@@ -3,7 +3,6 @@ const { generateToken } = require("./jwt");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-// Register
 async function register(username, password) {
     try {
         const existingUser = await User.findOne({ username });
@@ -22,7 +21,6 @@ async function register(username, password) {
     }
 }
 
-// Login
 async function login(req, res) {
     const { username, password } = req.body;
     try {
@@ -48,9 +46,9 @@ async function login(req, res) {
     }
 }
 
-// Middleware de autenticação
+// auth middlewares
 function authenticate(req, res, next) {
-    const token = req.header("Authorization")?.split(" ")[1]; // "Bearer token"
+    const token = req.header("Authorization")?.split(" ")[1];
 
     if (!token) {
         return res.status(401).json({ error: "Acesso não autorizado" });

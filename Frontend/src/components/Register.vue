@@ -18,11 +18,11 @@
           <div class="form-group">
             <label for="username">Nome de utilizador</label>
             <div class="input-container">
-              <input 
-                v-model="username" 
-                type="text" 
-                id="username" 
-                required 
+              <input
+                v-model="username"
+                type="text"
+                id="username"
+                required
                 placeholder="Digite o seu nome de utilizador"
                 autocomplete="username"
               />
@@ -32,11 +32,11 @@
           <div class="form-group">
             <label for="password">Palavra-passe</label>
             <div class="input-container">
-              <input 
-                v-model="password" 
-                type="password" 
-                id="password" 
-                required 
+              <input
+                v-model="password"
+                type="password"
+                id="password"
+                required
                 placeholder="Digite a sua palavra-passe"
                 autocomplete="new-password"
               />
@@ -46,11 +46,11 @@
           <div class="form-group">
             <label for="confirmPassword">Confirmar palavra-passe</label>
             <div class="input-container">
-              <input 
-                v-model="confirmPassword" 
-                type="password" 
-                id="confirmPassword" 
-                required 
+              <input
+                v-model="confirmPassword"
+                type="password"
+                id="confirmPassword"
+                required
                 placeholder="Confirme a sua palavra-passe"
                 autocomplete="new-password"
               />
@@ -67,7 +67,7 @@
             {{ errorMessage }}
           </p>
           <p class="login-link">
-            Já tem uma conta? 
+            Já tem uma conta?
             <router-link to="/login">Inicie sessão aqui</router-link>
           </p>
         </div>
@@ -89,7 +89,6 @@ export default {
   },
   methods: {
     async registerUser() {
-      // Validar se as palavras-passe coincidem
       if (this.password !== this.confirmPassword) {
         this.errorMessage = 'As palavras-passe não coincidem!';
         return;
@@ -113,7 +112,7 @@ export default {
         const data = await response.json();
 
         if (response.ok) {
-          this.$router.push('/login'); // Redirecionar para a página de login após o registro
+          this.$router.push('/login');
         } else {
           this.errorMessage = data.error || 'Erro ao registar a conta';
         }
@@ -138,190 +137,145 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
-  min-height: 100vh;
-  width: 100%;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #fff;
+  font-family: 'Inter', sans-serif;
   padding: 1rem;
 }
 
 .register-form-container {
   width: 100%;
   max-width: 440px;
-  margin: 0 auto;
 }
 
 .register-card {
-  background: white;
+  background: rgba(255, 255, 255, 0.05);
   padding: 2.5rem;
   border-radius: 1rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
   animation: fadeIn 0.5s ease-out;
-  width: 100%;
 }
 
 .card-header {
   text-align: center;
   margin-bottom: 2rem;
-  position: relative;
 }
 
 .card-header h2 {
-  color: #1a365d;
-  font-size: 1.875rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(to right, #fff, #00f2fe);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .subtitle {
-  color: #64748b;
+  color: #a8b2d1;
   font-size: 0.875rem;
+}
+
+.back-button-container {
+  margin-bottom: 1rem;
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.back-button {
+  color: #a8b2d1;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.back-button:hover {
+  color: #fff;
 }
 
 .form-group {
   margin-bottom: 1.5rem;
 }
 
-label {
+.form-group label {
   display: block;
-  color: #475569;
-  font-size: 0.875rem;
-  font-weight: 500;
   margin-bottom: 0.5rem;
+  color: #a8b2d1;
 }
 
-.input-container {
-  position: relative;
-}
-
-input {
+.input-container input {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  padding: 0.75rem;
   border-radius: 0.5rem;
-  font-size: 1rem;
-  transition: all 0.2s;
-  background: #f8fafc;
+  transition: border-color 0.3s, box-shadow 0.3s;
 }
 
 input:focus {
+  border-color: #4facfe;
+  box-shadow: 0 0 5px rgba(79, 172, 254, 0.5);
   outline: none;
-  border-color: #3b82f6;
-  background: white;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .register-button {
   width: 100%;
-  padding: 0.875rem;
-  background: #3b82f6;
-  color: white;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+  color: #fff;
+  font-weight: 600;
   border: none;
   border-radius: 0.5rem;
-  font-size: 1rem;
-  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
-  margin-top: 1.5rem;
+  transition: box-shadow 0.3s;
 }
 
 .register-button:hover {
-  background: #2563eb;
-}
-
-.register-button:active {
-  transform: scale(0.98);
+  box-shadow: 0 6px 15px rgba(79, 172, 254, 0.4);
 }
 
 .register-button.loading {
-  background: #93c5fd;
+  background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
   cursor: not-allowed;
 }
 
+.error-message {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  margin-top: 1rem;
+}
+
 .card-footer {
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   text-align: center;
 }
 
-.error-message {
-  color: #ef4444;
-  font-size: 0.875rem;
-  margin-bottom: 1rem;
-  padding: 0.5rem;
-  background: #fee2e2;
-  border-radius: 0.375rem;
-  animation: shake 0.5s ease-in-out;
-}
-
 .login-link {
-  color: #64748b;
-  font-size: 0.875rem;
+  color: #a8b2d1;
 }
 
 .login-link a {
-  color: #3b82f6;
+  color: #4facfe;
   text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s;
+  font-weight: 600;
 }
 
 .login-link a:hover {
-  color: #2563eb;
   text-decoration: underline;
 }
-
-.back-button-container {
-  position: absolute;
-  left: -40px;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-  margin-left: 1rem;
-}
-
-.back-button {
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-  color: #3b82f6;
-  font-weight: 500;
-  transition: color 0.2s;
-}
-
-.btn-icon {
-  margin-right: 0.5rem;
-  font-size: 1.5rem; /* Tamanho da seta */
-}
-
-.back-button:hover {
-  color: #2563eb;
-}
-
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-20px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
-}
-
-@media (max-width: 640px) {
-  .register-card {
-    padding: 1.5rem;
-  }
-  
-  .page-container {
-    padding: 1rem;
-  }
-}
 </style>
-

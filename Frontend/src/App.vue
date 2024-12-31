@@ -7,7 +7,6 @@
 </script>
 
 <style>
-/* Removido o "scoped" para que os estilos sejam globais */
 * {
   margin: 0;
   padding: 0;

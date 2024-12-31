@@ -9,7 +9,6 @@ const jwt = require("jsonwebtoken");
 const routes = require("./utils/routes");
 const Room = require("./models/Room");
 const User = require("./models/User");
-const { timeStamp } = require("console");
 const path = require("path");
 
 dotenv.config({ path: path.join(__dirname, ".env") });
@@ -28,26 +27,19 @@ const io = new Server(server, {
 });
 app.set("io", io);
 
-// Middlewares
+// middlewares
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Rotas
+// route manager
 app.use("/", routes);
 
-// Serve files
+// serve static files
 app.use(express.static(path.join(__dirname, "../../Frontend/dist")));
 app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "../../Frontend/dist/index.html"));
 });
-
-// Endpoint de teste
-/*
-app.get("/", (req, res) => {
-    res.send("Chat App Backend Running");
-});
- */
 
 // WebSocket connection
 io.on("connection", (socket) => {
@@ -244,21 +236,13 @@ io.on("connection", (socket) => {
         socket.leave(roomId);
         console.log(`🔇 User ${socket.id} left room: ${roomId}`);
     });
-    /*
-    // Enviar uma mensagem para uma sala específica
-    socket.on("sendMessage", (roomId, message) => {
-        io.to(roomId).emit("message", message); // Enviar a mensagem para todos na sala
-        console.log(`📩 Message sent to room ${roomId}: ${message}`);
-    });
-    */
 
-    // Desconectar o usuário
     socket.on("disconnect", () => {
         console.log("❌ User disconnected: ", socket.id);
     });
 });
 
-// Conexão com MongoDB
+// MongoDB and server start
 mongoose
     .connect(process.env.MONGO_URI)
     .then(() => {

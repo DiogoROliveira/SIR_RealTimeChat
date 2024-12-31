@@ -1,4 +1,3 @@
-<!-- TODO: indicador de capacidade de um grupo e indicador de numero de utilizadores (also, maybe fazer se capacidade == 0 ent é inf)-->
 <template>
   <div class="dashboard">
     <aside class="user-info">
@@ -14,9 +13,7 @@
   <main class="chat-section">
     <div class="chat-rooms">
       <h2>Grupos</h2>
-      <ul>
-        <!-- ! Implementar indicador de capacidade (EX: n/10) -->
-         
+      <ul>         
         <li
           v-for="room in chatRooms"
           :key="room._id"
@@ -35,7 +32,6 @@
       <div class="modal-content">
         <h3>Gerir Chats</h3>
 
-        <!-- Listagem de salas públicas -->
         <div class="public-rooms">
           <h4>Salas Públicas</h4>
           <ul v-if="publicRooms.length">
@@ -47,7 +43,6 @@
           <p v-else>Nenhuma sala pública disponível no momento.</p>
         </div>
 
-        <!-- Botões adicionais -->
         <div class="modal-actions">
           <button @click="openRoomCreateModal" class="action-btn">Criar Nova Sala</button>
           <button @click="openJoinByLink" class="action-btn">Entrar por Link/Código</button>
@@ -75,20 +70,13 @@
             />
           </div>
 
-          <div class="form-group">
-            <label for="roomCapacity">Capacidade</label>
-            <input
-              type="number"
-              id="roomCapacity"
-              v-model="newRoom.capacity"
-              required
-              placeholder="Capacidade da sala"
-            />
-          </div>
+          <CapacitySlider v-model="newRoom.capacity" :min="1" :max="100" />
+
 
           <div class="form-group">
-            <label>
-              <input type="checkbox" v-model="newRoom.isPrivate" />
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="newRoom.isPrivate" class="custom-checkbox" />
+              <span class="checkbox-custom">__</span>
               Sala Privada
             </label>
           </div>
@@ -170,7 +158,7 @@
         </div>
 
         <div class="room-settings-body">
-          <!-- Editar nome da sala -->
+          
           <div class="form-group room-name-group">
             <label>Nome da Sala</label>
             <input
@@ -198,7 +186,6 @@
             </div>
           </div>
 
-          <!-- Lista de usuários com opção de kick -->
           <div class="room-users-section">
             <h4>Utilizadores</h4>
             <div class="room-users-list">
@@ -233,6 +220,16 @@
 
   </main>
 </div>
+
+<ConfirmationModal
+  :show="showDeleteConfirmation"
+  title="Apagar Sala"
+  message="Tem certeza que deseja apagar esta sala? Esta ação não pode ser desfeita."
+  confirm-text="Apagar"
+  cancel-text="Cancelar"
+  @confirm="confirmDeleteRoom"
+  @cancel="cancelDeleteRoom"
+/>
 
 <UserSettings 
     v-if="showSettings"
@@ -270,9 +267,11 @@ import UserSettings from "./UserSettings.vue";
 import Toast from './Toast.vue';
 import LeaveRoomModal from './LeaveRoomModal.vue';
 import JoinPrivateRoom from "./JoinPrivateRoom.vue";
+import CapacitySlider from './CapacitySlider.vue';
+import ConfirmationModal from './ConfirmationModal.vue';
 import { sanitizeInput } from './utils/security';
 
-const API_URL = 'http://localhost:3000'; // add the server URL to host locally (htt://localhost:3000)
+const API_URL = 'http://localhost:3000'; // to host locally (htt://localhost:3000)
 
 export default {
   name: "Dashboard",
@@ -281,6 +280,8 @@ export default {
     Toast,
     LeaveRoomModal,
     JoinPrivateRoom,
+    CapacitySlider,
+    ConfirmationModal
   },
   data() {
     return {
@@ -318,6 +319,7 @@ export default {
       showLeaveModal: false,
       showJoinPrivateModal: false,
       showAccessCode: false,
+      showDeleteConfirmation: false,
     };
   },
   methods: {
@@ -337,7 +339,7 @@ export default {
         this.socket.emit("authenticate", sessionStorage.getItem("token"));
     });
 
-    // Kinda working now (still would prefer a toke refreshing system, maybe later will do)
+    // Kinda working now (still would prefer a token refreshing system, maybe later will do)
     this.socket.on("authError", (message) => {
         this.logout();
     });
@@ -371,6 +373,9 @@ export default {
 
   async createRoom() {
     try {
+
+        console.log(JSON.stringify(this.newRoom));
+
         const response = await fetch(`${API_URL}/rooms`, {
             method: "POST",
             headers: {
@@ -403,11 +408,7 @@ export default {
     }
   },
 
-  async deleteRoom() {
-    if (!confirm('Tem certeza que deseja apagar esta sala? Esta ação não pode ser desfeita.')) {
-      return;
-    }
-
+  async confirmDeleteRoom() {
     try {
       this.socket.emit("roomDeleted", this.selectedRoom);
       const response = await fetch(`${API_URL}/rooms/${this.selectedRoom}`, {
@@ -423,7 +424,6 @@ export default {
       }
 
       this.chatRooms = this.chatRooms.filter(room => room._id !== this.selectedRoom);
-            
       this.selectedRoom = null;
       this.messages = [];
       
@@ -438,6 +438,8 @@ export default {
       
     } catch (error) {
       this.handleError(error, 'Erro ao apagar sala');
+    } finally {
+      this.showDeleteConfirmation = false;
     }
   },
 
@@ -495,7 +497,7 @@ export default {
 
     } catch (error) {
       console.error("Erro ao entrar na sala:", error);
-      alert("Erro ao entrar na sala.");
+      this.handleError(error, "Erro ao entrar na sala, capacidade máxima atingida");
     }
   },
 
@@ -514,20 +516,15 @@ export default {
       }
 
 
-      // Emitir evento de saída para o socket
       this.socket.emit("leaveRoom", this.selectedRoom);
       
-      // Remover a sala da lista de salas
       this.chatRooms = this.chatRooms.filter(room => room._id !== this.selectedRoom);
       
-      // Resetar a sala selecionada
       this.selectedRoom = null;
       this.messages = [];
       
-      // Fechar o modal
       this.showLeaveModal = false;
       
-      // Mostrar mensagem de sucesso
       this.showToast = true;
       this.toastMessage = "Você saiu da sala com sucesso";
       this.toastType = "success";
@@ -691,7 +688,7 @@ export default {
   handleError(error, defaultMessage) {
       console.error(error);
       this.showToast = true;
-      this.toastMessage = error.message || defaultMessage;
+      this.toastMessage = defaultMessage;
       this.toastType = "error";
       setTimeout(() => {
           this.showToast = false;
@@ -757,6 +754,14 @@ export default {
     setTimeout(() => {
       this.showToast = false;
     }, 3000);
+  },
+
+  async deleteRoom() {
+      this.showDeleteConfirmation = true;
+  },
+
+  cancelDeleteRoom() {
+      this.showDeleteConfirmation = false;
   },
 
   // =============== MODALS =============
@@ -895,10 +900,6 @@ export default {
     });
   },
 
-  // ============= TODO ==============
-  
- 
-
 },
 
 async mounted() {
@@ -976,13 +977,14 @@ watch: {
 </script>
 
 <style scoped>
-/* Layout principal */
+
+/* Dashboard */
 .dashboard {
-display: flex;
-height: 100vh;
-background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-color: #fff;
-font-family: "Inter", sans-serif;
+  display: flex;
+  height: 100vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #fff;
+  font-family: "Inter", sans-serif;
 }
 
 /* Informações do user */
@@ -1036,7 +1038,6 @@ background: #4facfe;
 color: #fff;
 }
 
-/* Botão de logout fixo */
 .logout-button {
 width: calc(100% - 4rem);
 position: absolute;
@@ -1298,7 +1299,7 @@ cursor: pointer;
 }
 
 
-/* Estilo Lista de Utilizadores */
+/* Lista de Utilizadores */
 .user-list {
   width: 20%;
   background: rgba(0, 0, 0, 0.30);
@@ -1501,22 +1502,22 @@ background: #43a047;
 }
 
 .modal-actions {
-margin: 1rem 0;
+  margin: 1rem 0;
 }
 
 .action-btn {
-background: #4facfe;
-color: #fff;
-border: none;
-padding: 0.5rem 1rem;
-margin: 0.5rem;
-border-radius: 4px;
-cursor: pointer;
-transition: background 0.3s;
+  background: #4facfe;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  margin: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.3s;
 }
 
 .action-btn:hover {
-background: #0077c2;
+  background: #0077c2;
 }
 
 .close-btn {
@@ -1530,7 +1531,7 @@ background: #0077c2;
 }
 
 .close-btn:hover {
-background: #dc2626;
+  background: #dc2626;
 }
 
 .form-group {
@@ -1552,7 +1553,52 @@ background: #dc2626;
   color: #fff;
 }
 
-/* Estilos específicos para o modal de configurações de sala */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.custom-checkbox {
+  display: none;
+}
+
+.checkbox-custom {
+  width: 20px;
+  height: 20px; 
+  border: 2px solid #4facfe;
+  color: transparent;
+  border-radius: 4px;
+  margin-right: 10px;
+  position: relative;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+.custom-checkbox:checked + .checkbox-custom {
+  background-color: #4facfe;
+  border-color: #4facfe;
+}
+
+.checkbox-custom::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 14px;
+  border: solid white;
+  border-width: 0 3px 3px 0;
+  transform: translate(-50%, -50%) rotate(45deg);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.custom-checkbox:checked + .checkbox-custom::after {
+  opacity: 1;
+}
+
+
+/* Modal de configurações de sala */
 .room-settings-modal .modal-content {
   max-width: 500px;
   width: 90%;
@@ -1631,7 +1677,7 @@ background: #dc2626;
 }
 
 .room-users-list {
-  max-height: 200px; /* Ajustar a altura máxima conforme necessário */
+  max-height: 200px; 
   overflow-y: auto;
   padding-right: 0.5rem;
 }
@@ -1709,11 +1755,11 @@ background: #dc2626;
   padding: 1.5rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 1rem;
 }
 
-.save-btn, .cancel-btn {
+.save-btn, .cancel-btn, .delete-btn {
   padding: 0.75rem 1.5rem;
   border-radius: 6px;
   font-size: 1rem;
@@ -1744,11 +1790,7 @@ background: #dc2626;
 .delete-btn {
   background-color: #dc3545;
   color: white;
-  padding: 8px 16px;
   border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-right: auto; 
 }
 
 .delete-btn:hover {
