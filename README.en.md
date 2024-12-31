@@ -1,209 +1,225 @@
-# Assignment #2
+# Real-Time Chat System
 
-## **Objective**
+A real-time chat application built with Vue.js and Node.js that enables users to communicate in public and private rooms with instant message updates.
 
-Develop collaborative and interactive web applications that incorporate the following main concepts:
+## Features
 
-1. Full-Stack Web Development:
-   - Dynamic and responsive frontend (HTML, CSS, JavaScript, Svelte/Vue.js).
-   - Backend with Node.js (or Deno) and RESTful APIs.
-2. Real-Time Collaboration:
-   - Synchronization of data between users using WebSockets.
-3. Data Management and Security:
-   - Persistent data storage with MongoDB.
-   - Secure authentication, for example using JWT.
-4. Solving Real Problems:
-   - Practical applications focused on useful features and user interaction.
+-   **User Authentication**
 
-This exercise emphasizes implementing functional systems, collaboration, and best practices in web development.
+    -   Secure registration and login with JWT
+    -   User profile customization with avatars and information about themselves
 
-------
+-   **Room Management**
 
-## **Topics**
+    -   Create and delete public/private chat rooms
+    -   Browse available rooms
+    -   Join rooms with capacity control
+    -   Private room access via access code system
 
-### **Real-Time Voting System**
+-   **Real-Time Messaging**
+    -   Instant message delivery using WebSocket technology
+    -   Message history persistence
+    -   User presence notifications (join/leave/kick events)
 
-#### **Description:**
+## Tech Stack
 
-An application where authenticated users can create and participate in polls, with real-time updated results.
+This project was developed using the **MEVN Tech Stack** (MongoDB, Express.js, Vue.js, Node.js)
 
-#### **Features**
+<p align="center">
+  <a href="https://skillicons.dev">
+    <img src="https://skillicons.dev/icons?i=mongodb,express,vue,nodejs&theme=dark" />
+  </a>
+</p>
 
-- **Authentication:** Registration and login using JWT. Basic permission system (admin for managing polls, users for voting).
-- **Poll Management:** Create polls with questions and response options; list available polls (active and closed).
-- **Vote Submission and Visualization:** Submit votes anonymously; view results in real-time (bar or pie charts).
-- **Real-Time Updates:** Use WebSockets to reflect new votes on the chart for all connected users.
+### Frontend
 
-#### **Technologies**
+-   Vue.js 3
+-   Vite
+-   Socket.IO Client
+-   Vue Router for navigation
+-   Custom components for UI elements
 
-- **Frontend:** HTML, CSS, JavaScript, Svelte or Vue.js (charts with Chart.js, ApexCharts, or D3.js).
-- **Backend:** Node.js (+ Express) or Deno.
-- **Database:** MongoDB.
-- **Authentication:** JWT.
-- **Real-Time Communication:** WebSockets.
-- **REST API:** Endpoints for authentication, poll creation, listing, and vote submission.
+### Backend
 
-------
+-   Node.js with Express
+-   MongoDB for data persistence
+-   Socket.IO for real-time communication
+-   JWT for authentication
+-   Custom middleware for route protection
 
-### **Real-Time Chat System**
+## Installation
 
-#### **Description:**
+### Prerequisites
 
-A chat application where authenticated users can send messages in public or private rooms, with real-time updates.
+-   Node.js (v16 or higher)
+-   MongoDB instance
+-   npm or yarn package manager
 
-#### **Features**
+### Backend Setup
 
-- **Authentication and Personalization:** Registration and login using JWT; optional personalization (avatar, colors).
-- **Room Management:** Create and delete public and private rooms; list available rooms.
-- **Real-Time Messaging:** Send messages to a specific room; instant updates for all connected users.
-- **Data Persistence:** Message history for each room stored in the database.
-- **Notifications:** Alerts when new users join or leave a room.
+1. Navigate to the backend directory:
 
-#### **Technologies**
+```bash
+cd Backend
+```
 
-- **Frontend:** HTML, CSS, JavaScript, Svelte, or Vue.js.
-- **Backend:** Node.js (Express) or Deno.
-- **Database:** MongoDB.
-- **Authentication:** JWT.
-- **Real-Time Communication:** WebSockets.
-- **REST API:** Endpoints for authentication, room management, and message history retrieval.
+2. Install dependencies:
 
-------
+```bash
+npm install
+```
 
-### **Online Auction Platform**
+3. Navigate to the /src directory:
 
-#### **Description:**
+```bash
+cd src
+```
 
-A platform where authenticated users can participate in real-time auctions, submitting bids that are instantly reflected.
+4. Create a .env file with the following variables:
 
-#### **Features**
+```js
+PORT = 3000;
+MONGODB_URI = your_mongodb_connection_string;
+JWT_SECRET = your_jwt_secret;
+```
 
-- **Authentication:** Registration and login with JWT; profile management.
-- **Auction Management:** Create auctions with a name, description, starting price, and time limit; list active and closed auctions.
-- **Bid Submission:** Validate bids (must be higher than the current bid); real-time updates of the highest bid; notifications for the winner and auction closure.
-- **History:** Bid and auction history visible on the user's profile.
+5. Start the server:
 
-#### **Technologies**
+```bash
+npm start
+```
 
-- **Frontend:** HTML, CSS, JavaScript, Svelte, or Vue.js.
-- **Backend:** Node.js (Express) or Deno.
-- **Database:** MongoDB.
-- **Authentication:** JWT.
-- **Real-Time Communication:** WebSockets.
-- **REST API:** Endpoints for authentication, auction creation, bid submission, and history retrieval.
+### Frontend Setup
 
-------
+1. Navigate to the frontend directory:
 
-### **Collaborative Word Cloud**
+```bash
+cd Frontend
+```
 
-#### **Description:**
+2. Install dependencies:
 
-An application where authenticated users can add words to form a collaborative word cloud, highlighting the most frequent words in real-time.
+```bash
+npm install
+```
+
+3. Change API_URL in [Dashboard.vue](/Frontend/src/components/Dashboard.vue) to match Node server URL:
+
+```js
+API_URL = `http://localhost:3000`;
+```
+
+4. Start the development server:
+
+```bash
+npm run dev
+```
+
+## Project Structure
+
+### Backend
 
-#### **Features**
+-   `src/models/` - Database schemas and models
+-   `src/utils/` - Utility functions, middleware and routes
+-   `src/server.js` - Main application entry point
 
-- **Authentication:** Registration and login with JWT; read-only access for unauthenticated users.
-- **Word Management:** Word submission by authenticated users; automatic frequency counting; optional offensive word filtering.
-- **Real-Time Updates:** Dynamically update the word cloud for all connected users.
-- **Personalization:** Choose colors or styles for the cloud.
-
-#### **Technologies**
-
-- **Frontend:** HTML, CSS, JavaScript, Svelte, or Vue.js.
-- **Backend:** Node.js (Express) or Deno.
-- **Database:** MongoDB.
-- **Authentication:** JWT.
-- **Real-Time Communication:** WebSockets.
-- **REST API:** Endpoints for authentication, word submission, and cloud retrieval.
-
-------
-
-### **Image Annotation Tool**
-
-#### **Description:**
-
-An application where authenticated users can upload images and collaboratively add annotations in real time.
-
-#### **Features**
-
-- **Authentication:** Registration and login with JWT; permissions for admins and collaborators.
-- **Image Management:** Upload images for review; organize by projects.
-- **Annotation Tool:** Add points, text, or shapes; edit/remove existing annotations.
-- **Real-Time Collaboration:** Instant updates of annotations for all connected users; show who is editing an annotation.
-- **Export (optional):** Export annotated images with visible or hidden layers.
-
-#### **Technologies**
-
-- **Frontend:** HTML, CSS, JavaScript, Svelte, or Vue.js.
-- **Backend:** Node.js (Express) or Deno.
-- **Database:** MongoDB.
-- **Authentication:** JWT.
-- **Real-Time Communication:** WebSockets.
-- **REST API:** Endpoints for authentication, image management, and annotation submission.
-
-------
-
-## **Global Requirements**
-
-### **Frontend**
-
-- **Frontend: HTML/CSS:** Use frameworks or plain HTML+CSS+JavaScript.
-
-### **Backend**
-
-- The backend must be developed using **Node** and **Express**.
-- Do not store data on the filesystem; persistent data must be stored in a **MongoDB** database.
-
-### REST APIs
-
-, HTTP methods should follow their definitions:
-
-- Use **GET** to retrieve data. Do not store data using a **GET** request.
-- Use **DELETE** to remove data.
-- Avoid using query parameters in the URL with **POST** requests.
-
-------
-
-## **Rules & Assessment**
-
-### **Groups**
-
-- Maximum 3 members per group.
-
-### **Submission Deadline**
-
-- December 21, 2024.
-
-### **GitHub Classroom Repository**
-
-1. The assignment will be launched as a group assignment. When a student accepts the group assignment, they can create a new team or join an existing team.
-2. For each group assignment, **GitHub Classroom** automatically creates a single shared repository for the team.
-
-#### **README.md**
-
-- Include installation and usage instructions in the repository README.md file, specifying:
-  - Group members.
-  - GitHub repository URL and publication address.
-  - A detailed project description (mini-report) with objectives, libraries/frameworks used, and any other relevant implementation details.
-  - A paragraph highlighting each member’s contributions.
-
-#### **Build / Install / Configure**
-
-- Provide a build and installation script wherever possible.
-- Include detailed configuration instructions.
-
-### **Publication**
-
-- The app must be deployed and operational on **render.com**.
-
-### **Moodle Submission**
-
-- Each group must submit:
-  - Group identification (alphabetical concatenation of members’ first names followed by the last digits of their student IDs).
-  - GitHub link.
-  - Render.com link.
-
-## **Assessment**
-
-- Fully functional projects will be highly valued.
-- Isolated non-functional features will be less penalized compared to general non-functionality.
+### Frontend
+
+-   `src/components/` - Vue components
+-   `src/router/` - Route definitions
+-   `src/assets/` - Static assets
+-   `src/utils/` - Helper functions
+
+### File Tree
+
+```sv
+|__ Backend
+|    |__ /src
+|    |    |__ /models
+|    |    |__ /utils
+|    |    |__ .env
+|    |    |__ server.js
+|    |__ .gitignore
+|    |__ package-lock.json
+|    |__ package.json
+|
+|__ Frontend
+|    |__ /public
+|    |__ /src
+|    |    |__ /assets
+|    |    |__ /components
+|    |    |    |__ /icons
+|    |    |    |__ /utils
+|    |    |    |__ Vue Components
+|    |    |__ /router
+|    |    |__ App.vue
+|    |    |__ main.js
+|    |__ .gitignore
+|    |__ index.html
+|    |__ jsconfig.json
+|    |__ package-lock.json
+|    |__ package.json
+|    |__ README.md
+|    |__ vite.config.js
+|
+|__ .gitignore
+|__ ENUNCIADO.md
+|__ package-lock.json
+|__ package.json
+|__ README.en.md
+|__ README.md
+```
+
+## API Endpoints
+
+### Authentication
+
+-   `POST /register` - User registration
+-   `POST /login` - User login
+-   `GET /user` - Fetch information about logged in user
+-   `PUT /user/profile` - Updates user information
+
+### Rooms
+
+-   `GET /rooms` - Get all rooms that the logged in user is in
+-   `POST /rooms` - Create new room
+-   `DELETE /rooms/:roomId` - Delete room
+-   `POST /rooms/:roomId/join` - Join room
+-   `POST /rooms/:accessCode/joinP` - Join private room through access code
+-   `POST /rooms/:roomId/leave` - Leave room
+-   `POST /rooms/:roomId/kick` - Kick user from room
+
+### Messages
+
+-   `GET /rooms/:id/messages` - Get room message history
+
+## Deployment
+
+The application is deployed on render.com. Both Frontend and Backend are deployed on the same URL since the Backend serves the Frontend's static files:
+
+-   App URL: [URL to be added]
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## Authors
+
+-   Diogo Rosas Oliveira (29950)
+-   David Gonçalo Gomes Reis (29216)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) file for details.
+
+## Acknowledgments
+
+-   Professor Pedro Miguel Moreira for project guidance
+-   IPVC for providing the development environment
+-   Documentation and inspiration from similar open-source projects
+
+This but in Portuguese [README](README.md).

@@ -7,16 +7,8 @@ const router = new Router();
 
 const crypto = require("crypto");
 
-/*
-// Rota de teste
-router.get("/test", (req, res) => {
-    res.status(200).json({ message: "Rota de teste funcionando" });
-});
-*/
-
 // ============================== UTILIZADORES ==============================
 
-// Registro de utilizador
 router.post("/register", async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -83,7 +75,6 @@ router.put("/user/profile", authenticate, async (req, res) => {
 
 // ============================== SALAS ==============================
 
-// Criar uma sala (rota protegida)
 router.post("/rooms", authenticate, async (req, res) => {
     try {
         const { name, isPrivate, capacity } = req.body;
@@ -140,13 +131,11 @@ router.post("/rooms", authenticate, async (req, res) => {
     }
 });
 
-// Listar salas (rota protegida)
 router.get("/rooms", authenticate, async (req, res) => {
     try {
-        // Buscar salas públicas e privadas em que o usuário é membro
         const rooms = await Room.find({
-            users: req.user.id, // Salas onde o usuário é membro
-        }).sort({ createdAt: -1 }); // Ordena pelas mais recentes (descendente)
+            users: req.user.id,
+        }).sort({ createdAt: -1 });
 
         res.status(200).json({
             success: true,
@@ -185,7 +174,6 @@ router.get("/rooms/public", authenticate, async (req, res) => {
     }
 });
 
-// Excluir sala (rota protegida)
 router.delete("/rooms/:roomId", authenticate, async (req, res) => {
     try {
         const room = await Room.findById(req.params.roomId);
@@ -239,7 +227,6 @@ router.get("/rooms/:roomId", authenticate, async (req, res) => {
     }
 });
 
-// Editar uma sala (rota protegida)
 router.put("/rooms/:roomId", authenticate, async (req, res) => {
     try {
         const { name, isPrivate, capacity } = req.body; // Campos que podem ser atualizados
@@ -281,7 +268,6 @@ router.put("/rooms/:roomId", authenticate, async (req, res) => {
     }
 });
 
-// Entrar em uma sala (rota protegida)
 router.post("/rooms/:roomId/join", authenticate, async (req, res) => {
     try {
         const room = await Room.findById(req.params.roomId);
@@ -346,7 +332,6 @@ router.post("/rooms/:accessCode/joinP", authenticate, async (req, res) => {
     }
 });
 
-// Rota para o usuário sair da sala
 router.post("/rooms/:roomId/leave", authenticate, async (req, res) => {
     try {
         const { roomId } = req.params;
@@ -375,7 +360,6 @@ router.post("/rooms/:roomId/leave", authenticate, async (req, res) => {
     }
 });
 
-// Rota para o admin/criador expulsar um usuário
 router.post("/rooms/:roomId/kick", authenticate, async (req, res) => {
     try {
         const { roomId } = req.params;
