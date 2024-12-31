@@ -214,7 +214,7 @@ A aplicação está implementada no render.com. Tanto o Frontend como o Backend 
 
 ## Licença
 
-Este projeto está licenciado sob a Licença MIT - consulte o ficheiro [LICENSE](LICENSE.md) para detalhes.
+Este projeto está licenciado sob a Licença MIT - consulte o ficheiro [LICENSE](LICENSE) para detalhes.
 
 ## Agradecimentos
 
