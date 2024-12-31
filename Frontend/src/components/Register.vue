@@ -77,6 +77,8 @@
 </template>
 
 <script>
+
+const API_URL = '';
 export default {
   data() {
     return {
@@ -98,7 +100,7 @@ export default {
         this.isLoading = true;
         this.errorMessage = '';
 
-        const response = await fetch('http://localhost:3000/register', {
+        const response = await fetch(`${API_URL}/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

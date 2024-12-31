@@ -63,6 +63,8 @@
 </template>
 
 <script>
+
+const API_URL = '';
 export default {
   data() {
     return {
@@ -78,7 +80,7 @@ export default {
         this.isLoading = true;
         this.errorMessage = '';
 
-        const response = await fetch('http://localhost:3000/login', {
+        const response = await fetch(`${API_URL}/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
