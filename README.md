@@ -212,6 +212,26 @@ A aplicação está implementada no render.com. Tanto o Frontend como o Backend 
 -   Diogo Rosas Oliveira (29950)
 -   David Gonçalo Gomes Reis (29216)
 
+## Contribuições da Equipa
+### Diogo Rosas Oliveira (29950)
+
+- Desenvolvimento principal da arquitetura do backend e implementação do servidor Node.js/Express
+- Integração do Socket.IO client com o frontend
+- Configuração e implementação do WebSocket usando Socket.IO
+- Desenvolvimento da interface do utilizador com Vue.js 3
+- Documentação técnica e estruturação do repositório
+- Deployment e configuração da aplicação no render.com
+
+### David Gonçalo Gomes Reis (29216)
+
+- Setup inicial do projeto
+- Implementação do sistema de autenticação JWT e middleware de segurança
+- Implementação do sistema de routing e gestão de estado no frontend
+- Design e desenvolvimento dos componentes de UI para chat e gestão de salas
+- Desenvolvimento das APIs RESTful e integração com MongoDB
+- Implementação do sistema de notificações em tempo real
+
+
 ## Licença
 
 Este projeto está licenciado sob a Licença MIT - consulte o ficheiro [LICENSE](LICENSE) para detalhes.
