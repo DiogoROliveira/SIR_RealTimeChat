@@ -94,7 +94,7 @@ export default {
         },
         async saveChanges() {
             try {
-                const response = await fetch('http://localhost:3000/user/profile', {
+                const response = await fetch('/user/profile', {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
