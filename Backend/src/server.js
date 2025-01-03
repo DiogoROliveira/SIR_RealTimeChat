@@ -31,7 +31,12 @@ app.set("io", io);
 app.use(
     cors({
         origin: (origin, callback) => {
-            callback(null, true);
+            const allowedOrigins = ["https://project-assignment-2-29950-29216.onrender.com"];
+            if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+                callback(null, true);
+            } else {
+                callback(new Error("Not allowed by CORS"));
+            }
         },
         methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
         allowedHeaders: ["Content-Type", "Authorization"],
