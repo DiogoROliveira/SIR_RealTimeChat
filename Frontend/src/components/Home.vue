@@ -106,7 +106,7 @@ export default {
   padding: 0;
   position: relative;
   overflow-x: hidden;
-  overflow-y: hidden;
+  overflow-y: auto;
 }
 
 /* Animação de fundo */
@@ -392,4 +392,5 @@ export default {
     justify-content: center;
   }
 }
+
 </style>
