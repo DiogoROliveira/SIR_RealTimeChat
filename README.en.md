@@ -212,6 +212,26 @@ The application is deployed on render.com. Both Frontend and Backend are deploye
 -   Diogo Rosas Oliveira (29950)
 -   David Gonçalo Gomes Reis (29216)
 
+## Team contributions
+
+### Diogo Rosas Oliveira (29950)
+
+- Main development of the backend architecture and implementation of the Node.js/Express server
+- Integration of the Socket.IO client with the frontend
+- WebSocket configuration and implementation using Socket.IO
+- User interface development with Vue.js 3
+- Technical documentation and repository structuring
+- Deployment and configuration of the application on render.com
+
+### David Gonçalo Gomes Reis (29216)
+
+- Initial project setup
+- Implementation of the JWT authentication system and security middleware
+- Implementation of the routing and status management system on the frontend
+- Design and development of UI components for chat and room management
+- Development of RESTful APIs and integration with MongoDB
+- Implementation of the real-time notification system
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) file for details.
