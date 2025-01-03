@@ -40,6 +40,8 @@
 <script>
 import compressImage from './utils/imageCompressor';
 
+const API_URL = '';
+
 export default {
     name: 'UserSettings',
     props: {
@@ -94,7 +96,7 @@ export default {
         },
         async saveChanges() {
             try {
-                const response = await fetch('/user/profile', {
+                const response = await fetch(`${API_URL}/user/profile`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${sessionStorage.getItem('token')}`,

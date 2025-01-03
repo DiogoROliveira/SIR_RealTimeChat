@@ -32,3 +32,9 @@ a,
         padding: 0 2rem;
     }
 }
+
+@media (max-height: 720px) {
+    #app {
+        scale: 0.8;
+    }
+}
